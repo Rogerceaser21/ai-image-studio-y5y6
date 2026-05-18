@@ -1403,10 +1403,10 @@ html, body {
 .style-card {
   display: flex;
   flex-direction: column;
-  gap: clamp(0.3rem, 0.6vh, 0.5rem);
-  padding: clamp(0.4rem, 0.9vw, 0.7rem);
+  gap: clamp(0.2rem, 0.4vh, 0.35rem);
+  padding: clamp(0.25rem, 0.5vw, 0.45rem);
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: 7px;
   min-height: 0;
   overflow: hidden;
@@ -1430,11 +1430,12 @@ html, body {
 }
 .style-card-label {
   font-family: var(--font-display);
-  font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+  font-size: clamp(1rem, 1.7vw, 1.5rem);
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   text-align: center;
   text-transform: uppercase;
+  flex-shrink: 0;
 }
 .style-card-eg {
   font-size: clamp(0.7rem, 1.1vw, 0.95rem);
@@ -1442,6 +1443,93 @@ html, body {
   text-align: center;
   line-height: 1.25;
   font-style: italic;
+}
+/* Styles slide: kill default slide-inner gap so grid claims everything */
+.styles-slide .slide-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.styles-slide .styles-grid {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===========================================
+   SLIDE 6 — RACE RECAP (image example on the right, kept inside viewport)
+   =========================================== */
+.race-recap-slide .slide-inner { overflow: hidden; }
+.race-recap-body {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: clamp(0.6rem, 1.4vw, 1.2rem);
+  flex: 1;
+  min-height: 0;
+  margin-top: clamp(0.3rem, 0.6vh, 0.5rem);
+}
+.race-recap-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.4rem, 0.9vw, 0.7rem);
+  min-height: 0;
+  overflow: hidden;
+}
+.race-recap-grid .vocab-item {
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(0.5rem, 1vw, 0.85rem);
+}
+.race-recap-grid .vocab-term {
+  font-size: clamp(0.95rem, 1.6vw, 1.4rem);
+}
+.race-recap-grid .vocab-def {
+  font-size: clamp(0.75rem, 1.2vw, 1rem);
+  line-height: 1.3;
+}
+.race-recap-example {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.7vh, 0.5rem);
+  padding: clamp(0.5rem, 1.1vw, 0.9rem);
+  background: rgba(255,0,170,0.05);
+  border: 1px solid rgba(255,0,170,0.35);
+  border-radius: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+.race-recap-example-label {
+  font-family: var(--font-display);
+  font-size: clamp(0.78rem, 1.2vw, 1rem);
+  color: var(--magenta);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+.race-recap-example-img {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+}
+.race-recap-example-img img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+.race-recap-example-caption {
+  font-size: clamp(0.7rem, 1.05vw, 0.92rem);
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+  line-height: 1.3;
+  margin: 0;
+  flex-shrink: 0;
 }
 .style-card.s1 { border-color: rgba(0,255,204,0.35); }
 .style-card.s1 .style-card-label { color: var(--cyan); }
@@ -1764,42 +1852,44 @@ html, body {
        SLIDE 6: RACE FRAMEWORK RECAP (with fragment-reveal question)
        Question shown by default, R/A/C/E breakdown reveals on next clicks
        ============================================================ -->
-  <section class="slide" data-slide="6" aria-label="RACE framework recap"
+  <section class="slide race-recap-slide" data-slide="6" aria-label="RACE framework recap"
     data-notes="<strong>RACE recap with IMAGE examples (3 min).</strong> Same framework you already know, fresh examples for images. <span class='tag cfu'>CFU Cold Call</span> 'Who can ***explain*** how RACE works?' Wait 5-7s. Take 2 voices. THEN press NEXT four times to reveal R / A / C / E one by one. For each: 'How would you describe this letter when designing an IMAGE?'">
-    <div class="slide-inner">
-      <span class="eyebrow reveal d1">RACE Recap &middot; Now for Images</span>
-      <h2 class="slide-title reveal d2">The <span style="color: var(--magenta);">RACE</span> Framework</h2>
-      <div class="accent-line reveal d3"></div>
+    <div class="slide-inner" style="padding: clamp(0.7rem, 1.6vh, 1.2rem) clamp(1rem, 2.4vw, 1.8rem); gap: clamp(0.3rem, 0.7vh, 0.6rem); overflow: hidden;">
+      <div style="display: flex; align-items: center; gap: clamp(0.6rem, 1.4vw, 1.1rem); flex-shrink: 0;">
+        <span class="eyebrow reveal d1" style="margin: 0;">RACE Recap &middot; Now for Images</span>
+      </div>
+      <h2 class="slide-title reveal d2" style="margin: 0; font-size: clamp(1.4rem, 2.8vw, 2.2rem); flex-shrink: 0;">The <span style="color: var(--magenta);">RACE</span> Framework</h2>
+      <div class="accent-line reveal d3" style="flex-shrink: 0;"></div>
 
-      <div class="two-col" style="flex: 1; align-items: stretch; margin-top: var(--gap-sm); gap: clamp(0.6rem, 1.4vw, 1.2rem);">
+      <div class="race-recap-body">
         <!-- LEFT: RACE vocab cards revealed one at a time -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: clamp(0.4rem, 1vw, 0.8rem); min-height: 0;">
+        <div class="race-recap-grid">
           <div class="vocab-item" data-fragment="1">
             <div class="vocab-term" style="color: var(--cyan);">R &middot; Role</div>
-            <div class="vocab-def">Who should the A.I. <strong>pretend to be</strong>? (e.g. children's book illustrator, photographer, anime artist)</div>
+            <div class="vocab-def">Who should the A.I. <strong>pretend to be</strong>? (e.g. children's book illustrator, anime artist)</div>
           </div>
           <div class="vocab-item" data-fragment="2">
             <div class="vocab-term" style="color: var(--magenta);">A &middot; Action</div>
-            <div class="vocab-def">What should the A.I. <strong>draw or generate</strong>? (e.g. draw a sea creature, paint a landscape)</div>
+            <div class="vocab-def">What should the A.I. <strong>draw or generate</strong>? (e.g. draw a sea creature)</div>
           </div>
           <div class="vocab-item" data-fragment="3">
             <div class="vocab-term" style="color: var(--blue);">C &middot; Context</div>
-            <div class="vocab-def">What is the <strong>scene or story</strong>? (e.g. lives near a coral reef, big curious eyes, a fish approaching)</div>
+            <div class="vocab-def">What is the <strong>scene or story</strong>? (e.g. coral reef, big eyes, fish approaching)</div>
           </div>
           <div class="vocab-item" data-fragment="4">
             <div class="vocab-term" style="color: var(--gold);">E &middot; Expectation</div>
-            <div class="vocab-def">What should the image <strong>LOOK like</strong>? (style, colour, mood, format, e.g. bright watercolour, A4 portrait)</div>
+            <div class="vocab-def">What should it <strong>LOOK like</strong>? (style, colour, mood &mdash; e.g. bright watercolour)</div>
           </div>
         </div>
 
-        <!-- RIGHT: live example — sea creature image + the prompt that made it -->
-        <div class="reveal d4" style="display: flex; flex-direction: column; gap: clamp(0.4rem, 0.9vh, 0.6rem); padding: clamp(0.5rem, 1.1vw, 0.9rem); background: rgba(255,0,170,0.05); border: 1px solid rgba(255,0,170,0.35); border-radius: 8px; min-height: 0;">
-          <span style="font-family: var(--font-display); font-size: clamp(0.78rem, 1.2vw, 1rem); color: var(--magenta); letter-spacing: 0.12em; text-transform: uppercase;">Live Example</span>
-          <div style="flex: 1; display: flex; justify-content: center; align-items: center; min-height: 0; overflow: hidden; border-radius: 6px; background: #000;">
-            <img src="assets/race-example-sea-creature.png" alt="A friendly fantasy sea creature with big eyes near a coral reef" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        <!-- RIGHT: live example — sea creature image + prompt -->
+        <div class="race-recap-example reveal d4">
+          <span class="race-recap-example-label">Live Example</span>
+          <div class="race-recap-example-img">
+            <img src="assets/race-example-sea-creature.png" alt="A friendly fantasy sea creature with big eyes near a coral reef">
           </div>
-          <p style="font-size: clamp(0.72rem, 1.1vw, 0.95rem); color: var(--text-muted); text-align: center; font-style: italic; line-height: 1.3; margin: 0;">
-            R: children's book illustrator &middot; A: draw a sea creature &middot; C: coral reef, big eyes, a fish approaching &middot; E: bright watercolour, A4 portrait
+          <p class="race-recap-example-caption">
+            R: children's book illustrator &middot; A: draw a sea creature &middot; C: coral reef, big eyes, fish approaching &middot; E: bright watercolour
           </p>
         </div>
       </div>
@@ -1811,52 +1901,40 @@ html, body {
        The E in RACE is where STYLE lives. Show variety so students
        know how much freedom they have.
        ============================================================ -->
-  <section class="slide" data-slide="7" aria-label="Style is your superpower"
-    data-notes="<strong>I Do (3 min).</strong> The MOST powerful letter for images is E (Expectation), and inside E the most powerful word is STYLE. Walk through these 6 styles. Cold-call for each: 'Who would use THIS style and for what?' Encourage them to think of styles beyond these 6 (cartoon, sketch, oil painting, vaporwave, papercut, stained glass, etc.)">
-    <div class="slide-inner">
-      <div class="ped-badge i-do reveal d1">I Do</div>
-      <h2 class="slide-title reveal d2">Style is Your <span style="color: var(--magenta);">Superpower</span></h2>
-      <div class="accent-line reveal d3"></div>
-      <p class="body-text reveal d3" style="color: var(--text-primary); margin-bottom: var(--gap-sm);">
-        Same A.I. Same subject. Change ONE word in <strong style="color: var(--gold);">E (Expectation)</strong> and you get a whole different image. Pick a style that fits YOUR idea.
-      </p>
+  <section class="slide styles-slide" data-slide="7" aria-label="Style gallery"
+    data-notes="<strong>I Do (3 min).</strong> The MOST powerful letter for images is E (Expectation), and inside E the most powerful word is STYLE. Walk these 6 styles. For each: 'Who would use THIS style and for what?' Then push: 'There are dozens more — sketch, oil painting, vaporwave, papercut, stained glass, chalk. Style is your superpower.'">
+    <div class="slide-inner" style="padding: clamp(0.6rem, 1.5vh, 1.2rem) clamp(0.8rem, 2vw, 1.6rem);">
+      <div style="display: flex; align-items: center; gap: clamp(0.5rem, 1.2vw, 1rem); flex-shrink: 0;">
+        <div class="ped-badge i-do reveal d1" style="margin: 0;">I Do</div>
+        <h2 class="slide-title reveal d2" style="margin: 0; font-size: clamp(1.4rem, 2.8vw, 2.2rem);">Style is Your <span style="color: var(--magenta);">Superpower</span></h2>
+      </div>
 
-      <div class="styles-grid">
+      <div class="styles-grid" style="margin-top: clamp(0.4rem, 1vh, 0.8rem);">
         <div class="style-card s1 reveal d3">
           <div class="style-card-img"><img src="assets/style-watercolour.png" alt="A red fox sleeping under a tree in watercolour style"></div>
           <div class="style-card-label">Watercolour</div>
-          <div class="style-card-eg">soft, painterly, dreamy</div>
         </div>
         <div class="style-card s2 reveal d3">
           <div class="style-card-img"><img src="assets/style-manga.png" alt="An anime warrior holding a katana in Japanese manga style"></div>
           <div class="style-card-label">Japanese Manga</div>
-          <div class="style-card-eg">bold ink, big eyes, action lines</div>
         </div>
         <div class="style-card s3 reveal d4">
           <div class="style-card-img"><img src="assets/style-pixel-art.png" alt="A small adventurer in a forest, 16-bit pixel art"></div>
           <div class="style-card-label">Pixel Art</div>
-          <div class="style-card-eg">retro 16-bit video-game look</div>
         </div>
         <div class="style-card s4 reveal d4">
           <div class="style-card-img"><img src="assets/style-photorealistic.png" alt="A bald eagle soaring above mountains, photorealistic"></div>
           <div class="style-card-label">Photorealistic</div>
-          <div class="style-card-eg">looks like a real photo</div>
         </div>
         <div class="style-card s5 reveal d5">
           <div class="style-card-img"><img src="assets/style-3d-pixar.png" alt="A friendly little robot in 3D Pixar style"></div>
           <div class="style-card-label">3D Pixar</div>
-          <div class="style-card-eg">smooth, glossy, animated-film</div>
         </div>
         <div class="style-card s6 reveal d5">
           <div class="style-card-img"><img src="assets/style-comic.png" alt="A superhero soaring in classic comic book style"></div>
           <div class="style-card-label">Comic Book</div>
-          <div class="style-card-eg">bold outlines, dots, action poses</div>
         </div>
       </div>
-
-      <p class="reveal d6" style="text-align: center; font-family: var(--font-display); font-size: clamp(0.9rem, 1.6vw, 1.3rem); color: var(--gold); letter-spacing: 0.12em; margin-top: var(--gap-sm); text-transform: uppercase;">
-        ...and dozens more: <span style="color: var(--text-primary);">sketch &middot; oil painting &middot; vaporwave &middot; papercut &middot; stained glass &middot; chalk</span>
-      </p>
     </div>
   </section>
 
