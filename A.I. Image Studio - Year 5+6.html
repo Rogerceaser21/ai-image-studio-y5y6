@@ -1,0 +1,2565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A.I. Image Studio — RACE for Visuals (Year 5+6, Cycle 7)</title>
+
+<!-- Fonts: Clash Display (headings) + Satoshi (body) via Fontshare -->
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@700,600,500&f[]=satoshi@400,500,700&display=swap">
+
+<style>
+/* ===========================================
+   CSS CUSTOM PROPERTIES — NEON CYBER THEME
+   Edit :root to change the whole look
+   =========================================== */
+:root {
+  --bg-primary:    #0a0f1c;
+  --bg-card:       #0f1628;
+  --bg-card-alt:   #111a30;
+  --cyan:          #00ffcc;
+  --magenta:       #ff00aa;
+  --blue:          #4488ff;
+  --gold:          #ffd166;
+  --text-primary:  #ffffff;
+  --text-muted:    #7a8bb0;
+  --text-dim:      #3a4a6a;
+  --border:        rgba(0,255,204,0.15);
+
+  --font-display:  'Clash Display', sans-serif;
+  --font-body:     'Satoshi', sans-serif;
+
+  /* Font scale multiplier — controlled by A+/A− buttons and ⌘./⌘, */
+  --font-scale:    1;
+
+  /* Typography — all clamp() × --font-scale for live resizing */
+  --title-size:    calc(clamp(2.2rem, 7vw, 5.5rem)    * var(--font-scale));
+  --h2-size:       calc(clamp(1.4rem, 3.5vw, 2.8rem)  * var(--font-scale));
+  --h3-size:       calc(clamp(1rem, 2.2vw, 1.6rem)    * var(--font-scale));
+  --body-size:     calc(clamp(0.78rem, 1.4vw, 1.05rem)* var(--font-scale));
+  --small-size:    calc(clamp(0.65rem, 1vw, 0.85rem)  * var(--font-scale));
+  --label-size:    calc(clamp(0.6rem, 0.9vw, 0.75rem) * var(--font-scale));
+
+  /* Spacing */
+  --slide-pad:     clamp(1.5rem, 5vw, 5rem);
+  --gap:           clamp(0.6rem, 1.5vh, 1.4rem);
+  --gap-sm:        clamp(0.3rem, 0.8vh, 0.7rem);
+
+  /* Animation easing */
+  --ease-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ===========================================
+   RESET & BASE
+   =========================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ===========================================
+   SLIDE SYSTEM — JS-controlled, no scroll snap
+   All slides are stacked; only .active is shown
+   =========================================== */
+.slides-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity 0.45s var(--ease-expo), transform 0.45s var(--ease-expo);
+  pointer-events: none;
+  will-change: opacity, transform;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: auto;
+}
+
+.slide.exit-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+/* ===========================================
+   GLOBAL BACKGROUND LAYERS
+   Applied to every slide via .slide::before/::after
+   =========================================== */
+.slide {
+  background: var(--bg-primary);
+}
+
+/* Grid overlay */
+.slide::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--text-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--text-dim) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.18;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Scanline overlay */
+.slide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* All direct children sit above background layers */
+.slide > * { position: relative; z-index: 1; }
+
+/* ===========================================
+   VIEWPORT BASE — mandatory responsive rules
+   =========================================== */
+@media (max-height: 700px) {
+  :root {
+    --slide-pad:  clamp(1rem, 3vw, 2.5rem);
+    --gap:        clamp(0.4rem, 1vh, 0.9rem);
+    --h2-size:    clamp(1.1rem, 3vw, 2rem);
+    --title-size: clamp(1.6rem, 5.5vw, 3.5rem);
+  }
+}
+@media (max-height: 600px) {
+  :root {
+    --slide-pad:  clamp(0.75rem, 2.5vw, 1.8rem);
+    --gap:        clamp(0.3rem, 0.7vh, 0.6rem);
+    --title-size: clamp(1.3rem, 4.5vw, 2.5rem);
+    --body-size:  clamp(0.7rem, 1.1vw, 0.9rem);
+  }
+}
+@media (max-height: 500px) {
+  :root {
+    --slide-pad:  clamp(0.5rem, 2vw, 1.2rem);
+    --title-size: clamp(1.1rem, 4vw, 1.8rem);
+  }
+  .nav-dots { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slide, .reveal, .reveal-left, .reveal-scale {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+
+/* ===========================================
+   REVEAL ANIMATIONS — triggered by .active class
+   =========================================== */
+.reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition: opacity 0.55s var(--ease-expo), transform 0.55s var(--ease-expo);
+}
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-30px);
+  transition: opacity 0.55s var(--ease-expo), transform 0.55s var(--ease-expo);
+}
+.reveal-scale {
+  opacity: 0;
+  transform: scale(0.92);
+  transition: opacity 0.55s var(--ease-expo), transform 0.55s var(--ease-expo);
+}
+.slide.active .reveal,
+.slide.active .reveal-left,
+.slide.active .reveal-scale {
+  opacity: 1; transform: none;
+}
+
+/* Staggered delay for sequential reveals */
+.slide.active .d1 { transition-delay: 0.05s; }
+.slide.active .d2 { transition-delay: 0.15s; }
+.slide.active .d3 { transition-delay: 0.25s; }
+.slide.active .d4 { transition-delay: 0.35s; }
+.slide.active .d5 { transition-delay: 0.45s; }
+.slide.active .d6 { transition-delay: 0.55s; }
+.slide.active .d7 { transition-delay: 0.65s; }
+
+/* ===========================================
+   SHARED COMPONENTS
+   =========================================== */
+
+/* Pedagogy badge (I DO / WE DO / YOU DO) */
+.ped-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-family: var(--font-display);
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.35em 0.9em;
+  border-radius: 4px;
+  border: 1px solid;
+  width: fit-content;
+  margin-bottom: var(--gap-sm);
+}
+.ped-badge.i-do  { color: var(--cyan);    border-color: var(--cyan);    background: rgba(0,255,204,0.08); }
+.ped-badge.we-do { color: var(--magenta); border-color: var(--magenta); background: rgba(255,0,170,0.08); }
+.ped-badge.you-do{ color: var(--gold);    border-color: var(--gold);    background: rgba(255,209,102,0.08); }
+
+/* Slide inner content wrapper */
+.slide-inner {
+  padding: var(--slide-pad);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--gap);
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+/* Section eyebrow label */
+.eyebrow {
+  font-size: var(--label-size);
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+
+/* Slide heading */
+.slide-title {
+  font-family: var(--font-display);
+  font-size: var(--h2-size);
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+/* Cyan underline accent */
+.accent-line {
+  width: clamp(2.5rem, 5vw, 4rem);
+  height: 2px;
+  background: var(--cyan);
+  border-radius: 2px;
+  box-shadow: 0 0 10px var(--cyan);
+}
+
+/* Body paragraph */
+.body-text {
+  font-size: var(--body-size);
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+/* Bullet list */
+.bullet-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+.bullet-list li {
+  font-size: var(--body-size);
+  color: var(--text-primary);
+  padding-left: 1.4em;
+  position: relative;
+  line-height: 1.45;
+}
+.bullet-list li::before {
+  content: '›';
+  position: absolute;
+  left: 0;
+  color: var(--cyan);
+  font-weight: 700;
+}
+
+/* Card style */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.8rem, 1.5vw, 1.4rem);
+}
+
+/* RACE letter chip */
+.race-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2em;
+  height: 2em;
+  border-radius: 6px;
+  font-family: var(--font-display);
+  font-size: 1em;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.chip-r { background: rgba(0,255,204,0.15); color: var(--cyan);    border: 1px solid rgba(0,255,204,0.3); }
+.chip-a { background: rgba(255,0,170,0.15); color: var(--magenta); border: 1px solid rgba(255,0,170,0.3); }
+.chip-c { background: rgba(68,136,255,0.15); color: var(--blue);   border: 1px solid rgba(68,136,255,0.3); }
+.chip-e { background: rgba(255,209,102,0.15); color: var(--gold);  border: 1px solid rgba(255,209,102,0.3); }
+
+/* Star levels */
+.star-gold   { color: var(--gold); }
+.star-cyan   { color: var(--cyan); }
+.star-mag    { color: var(--magenta); }
+
+/* Neon glow text */
+.glow-cyan    { color: var(--cyan);    text-shadow: 0 0 25px rgba(0,255,204,0.5); }
+.glow-magenta { color: var(--magenta); text-shadow: 0 0 25px rgba(255,0,170,0.5); }
+
+/* Prompt code block */
+.prompt-block {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--cyan);
+  border-radius: 0 8px 8px 0;
+  padding: clamp(0.7rem, 1.2vw, 1.2rem) clamp(0.8rem, 1.5vw, 1.5rem);
+  font-family: 'Courier New', monospace;
+  font-size: var(--body-size);
+  color: var(--cyan);
+  line-height: 1.5;
+}
+
+/* Two-column grid */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.8rem, 2vw, 2rem);
+  align-items: start;
+}
+
+/* Image in slides */
+.slide-img {
+  width: 100%;
+  max-height: min(44vh, 360px);
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,255,204,0.08);
+}
+
+/* ===========================================
+   PROGRESS BAR
+   =========================================== */
+.progress-bar-wrap {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: rgba(255,255,255,0.05);
+  z-index: 1000;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta));
+  box-shadow: 0 0 8px var(--cyan);
+  transition: width 0.4s var(--ease-expo);
+  width: 0%;
+}
+
+/* ===========================================
+   NAVIGATION DOTS
+   =========================================== */
+.nav-dots {
+  position: fixed;
+  right: clamp(0.8rem, 2vw, 1.5rem);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.35rem, 0.8vh, 0.6rem);
+  z-index: 1000;
+}
+.nav-dots button {
+  width: clamp(5px, 0.7vw, 7px);
+  height: clamp(5px, 0.7vw, 7px);
+  border-radius: 50%;
+  border: 1px solid var(--text-dim);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  padding: 0;
+}
+.nav-dots button:hover { border-color: var(--text-muted); background: var(--text-muted); }
+.nav-dots button.active {
+  background: var(--cyan);
+  border-color: var(--cyan);
+  box-shadow: 0 0 6px var(--cyan);
+  transform: scale(1.3);
+}
+
+/* ===========================================
+   SLIDE COUNTER
+   =========================================== */
+.slide-counter {
+  position: fixed;
+  bottom: clamp(0.8rem, 2vh, 1.5rem);
+  right: clamp(1rem, 2.5vw, 2rem);
+  font-family: var(--font-display);
+  font-size: var(--label-size);
+  color: var(--text-dim);
+  letter-spacing: 0.1em;
+  z-index: 1000;
+}
+
+/* ===========================================
+   SLIDE 1: TITLE
+   =========================================== */
+.s1-orb {
+  position: absolute;
+  width: clamp(250px, 45vw, 600px);
+  height: clamp(250px, 45vw, 600px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,255,204,0.07) 0%, transparent 70%);
+  right: -5%;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.s1-ring {
+  position: absolute;
+  width: clamp(120px, 22vw, 280px);
+  height: clamp(120px, 22vw, 280px);
+  border: 1px solid rgba(0,255,204,0.15);
+  border-radius: 50%;
+  right: clamp(2rem, 8vw, 10rem);
+  top: 50%;
+  transform: translateY(-50%);
+  animation: spin-slow 20s linear infinite;
+}
+.s1-ring::before {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(255,0,170,0.12);
+  border-radius: 50%;
+}
+@keyframes spin-slow { to { transform: translateY(-50%) rotate(360deg); } }
+
+.s1-title {
+  font-family: var(--font-display);
+  font-size: var(--title-size);
+  font-weight: 700;
+  line-height: 0.95;
+  color: var(--text-primary);
+}
+.s1-subject {
+  font-size: var(--body-size);
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  margin-top: var(--gap-sm);
+}
+.s1-meta {
+  display: flex;
+  gap: clamp(0.6rem, 1.5vw, 1.2rem);
+  flex-wrap: wrap;
+  margin-top: var(--gap);
+}
+.s1-pill {
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 0.35em 0.9em;
+  font-size: var(--small-size);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+.s1-bottom-bar {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--magenta), transparent);
+  animation: bar-grow 1s var(--ease-expo) 0.8s both;
+}
+@keyframes bar-grow { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); } }
+
+/* ===========================================
+   SLIDE 3: SUCCESS CRITERIA STARS
+   =========================================== */
+.star-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.7rem, 1.2vw, 1.2rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+.star-card .level-label {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.star-card .level-desc {
+  font-size: var(--body-size);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+.star-card.s1 { border-color: rgba(0,255,204,0.3); }
+.star-card.s2 { border-color: rgba(68,136,255,0.3); }
+.star-card.s3 { border-color: rgba(255,0,170,0.3); }
+
+/* ===========================================
+   SLIDE 4-5: VOCABULARY GRID
+   =========================================== */
+.vocab-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.5rem, 1vw, 0.9rem);
+}
+.vocab-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.6rem, 1vw, 1rem);
+}
+.vocab-term {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.3em;
+}
+.vocab-def {
+  font-size: var(--small-size);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ===========================================
+   SLIDE 6: WHAT IS RACE (COMPARISON)
+   =========================================== */
+.compare-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.8rem, 1.5vw, 1.4rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+  height: 100%;
+}
+.compare-box.today { border-color: rgba(0,255,204,0.35); background: rgba(0,255,204,0.04); }
+.compare-box .box-label {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.compare-box .box-tag {
+  font-size: var(--label-size);
+  color: var(--text-dim);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.compare-box .box-quote {
+  font-size: var(--small-size);
+  color: var(--text-muted);
+  font-style: italic;
+  line-height: 1.45;
+  background: rgba(0,0,0,0.3);
+  border-radius: 4px;
+  padding: 0.5em 0.8em;
+}
+.compare-box .box-definition {
+  font-size: var(--small-size);
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ===========================================
+   SLIDE 9: RACE FRAMEWORK GRID
+   =========================================== */
+.race-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.6rem, 1.2vw, 1.1rem);
+}
+.race-card {
+  background: var(--bg-card);
+  border-radius: 8px;
+  padding: clamp(0.8rem, 1.4vw, 1.3rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 0.8vh, 0.7rem);
+  border: 1px solid transparent;
+}
+.race-card.r { border-color: rgba(0,255,204,0.25); }
+.race-card.a { border-color: rgba(255,0,170,0.25); }
+.race-card.c { border-color: rgba(68,136,255,0.25); }
+.race-card.e { border-color: rgba(255,209,102,0.25); }
+
+.race-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.race-card-letter {
+  font-family: var(--font-display);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1;
+}
+.r .race-card-letter { color: var(--cyan); }
+.a .race-card-letter { color: var(--magenta); }
+.c .race-card-letter { color: var(--blue); }
+.e .race-card-letter { color: var(--gold); }
+
+.race-card-word {
+  font-family: var(--font-display);
+  font-size: var(--body-size);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.race-card-q {
+  font-size: var(--small-size);
+  color: var(--text-muted);
+}
+.race-card-eg {
+  font-size: var(--small-size);
+  color: var(--text-dim);
+  font-style: italic;
+  line-height: 1.35;
+}
+
+/* ===========================================
+   SLIDE 10: PLAN YOUR PROMPT — RACE TABLE
+   =========================================== */
+.race-table {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 0.8vh, 0.7rem);
+}
+.race-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: clamp(0.6rem, 1.2vw, 1.2rem);
+  align-items: center;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.5rem, 0.9vw, 0.9rem);
+}
+.race-row-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+}
+.race-row-q {
+  font-size: var(--body-size);
+  color: var(--text-muted);
+}
+
+/* ===========================================
+   SLIDE 12: YOUR TURN — TASK CARDS
+   =========================================== */
+.task-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: clamp(0.6rem, 1.2vw, 1.1rem);
+}
+.task-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.8rem, 1.4vw, 1.3rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+.task-card.t1 { border-color: rgba(0,255,204,0.3); }
+.task-card.t2 { border-color: rgba(68,136,255,0.3); }
+.task-card.t3 { border-color: rgba(255,0,170,0.3); }
+.task-level {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.task-card.t1 .task-level { color: var(--cyan); }
+.task-card.t2 .task-level { color: var(--blue); }
+.task-card.t3 .task-level { color: var(--magenta); }
+.task-desc {
+  font-size: var(--small-size);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+.task-race {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2em;
+  margin-top: auto;
+}
+.task-race-item {
+  font-size: var(--label-size);
+  color: #ffffff;
+  line-height: 1.4;
+}
+
+/* ===========================================
+   SLIDE 14: EXIT TICKET
+   =========================================== */
+.exit-list {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.6rem, 1.2vh, 1rem);
+}
+.exit-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: clamp(0.65rem, 1.2vw, 1rem) clamp(0.8rem, 1.5vw, 1.4rem);
+}
+.exit-statement {
+  font-size: var(--body-size);
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+.yes-no {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: 700;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+/* ===========================================
+   SLIDE 15: MISSION COMPLETE
+   =========================================== */
+.mission-stars {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+.mission-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8em;
+  font-size: var(--body-size);
+  color: var(--text-muted);
+}
+.mission-item .stars { font-size: 1.1em; }
+
+/* Credits slide */
+.credits-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+}
+.credit-line {
+  font-size: var(--small-size);
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ===========================================
+   FONT SCALE CONTROL — bottom-left corner
+   A− | 100% | A+   (also ⌘, / ⌘.)
+   =========================================== */
+.font-scale-ctrl {
+  position: fixed;
+  bottom: clamp(0.8rem, 2vh, 1.5rem);
+  left: clamp(1rem, 2.5vw, 2rem);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 1000;
+  background: rgba(10, 15, 28, 0.88);
+  border: 1px solid rgba(0,255,204,0.2);
+  border-radius: 6px;
+  padding: 0.28em 0.45em;
+  backdrop-filter: blur(6px);
+}
+.font-scale-ctrl button {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: clamp(0.6rem, 0.85vw, 0.72rem);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.2em 0.45em;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+.font-scale-ctrl button:hover { color: var(--cyan); background: rgba(0,255,204,0.1); }
+.font-scale-ctrl button:active { transform: scale(0.92); }
+.font-scale-ctrl button:disabled { opacity: 0.25; cursor: default; }
+#fontScaleLabel {
+  font-family: var(--font-display);
+  font-size: clamp(0.55rem, 0.8vw, 0.68rem);
+  color: var(--text-dim);
+  min-width: 2.8em;
+  text-align: center;
+  letter-spacing: 0.04em;
+  user-select: none;
+}
+/* Divider + fullscreen icon button sit inside the same pill */
+.font-scale-ctrl .ctrl-divider {
+  width: 1px;
+  height: 1em;
+  background: rgba(0,255,204,0.25);
+  margin: 0 4px;
+}
+.font-scale-ctrl .fs-btn {
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  padding: 0.15em 0.4em;
+  line-height: 1;
+}
+/* ===========================================
+   CURSOR EFFECTS CANVAS
+   Full-viewport overlay for the glowing trail
+   and click-and-drag ink annotation.
+   pointer-events: none so clicks pass through.
+   =========================================== */
+#cursorFx {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* ===========================================
+   SPEAKER NOTES PANEL — N key + triple-tap NEXT
+   =========================================== */
+.speaker-notes-panel {
+  position: fixed;
+  bottom: clamp(0.8rem, 2vh, 1.5rem);
+  left: 50%;
+  transform: translateX(-50%) translateY(150%);
+  width: min(900px, 90vw);
+  max-height: 38vh;
+  z-index: 9000;
+  background: rgba(10, 15, 28, 0.97);
+  color: var(--text-primary);
+  padding: clamp(0.8rem, 1.5vw, 1.2rem) clamp(1rem, 2vw, 1.5rem);
+  border-radius: 12px;
+  box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  font-size: var(--small-size);
+  line-height: 1.55;
+  overflow-y: auto;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.speaker-notes-panel.visible { transform: translateX(-50%) translateY(0); }
+.notes-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 0.5em; padding-bottom: 0.4em;
+  border-bottom: 1px solid rgba(0, 255, 204, 0.15);
+}
+.notes-label { font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cyan); }
+.notes-counter { opacity: 0.55; font-family: var(--font-display); letter-spacing: 0.08em; }
+.notes-body strong { color: var(--magenta); }
+.notes-body em { color: var(--cyan); font-style: italic; }
+.notes-body .tag {
+  display: inline-block;
+  background: rgba(255, 0, 170, 0.4); color: var(--text-primary);
+  padding: 0.1em 0.5em; border-radius: 4px;
+  font-size: 0.85em; font-weight: 700; letter-spacing: 0.08em; margin-right: 0.4em;
+}
+.notes-body .tag.cfu { background: rgba(255, 0, 170, 0.6); }
+.notes-body .tag.tt  { background: rgba(0, 224, 255, 0.6); }
+.notes-hint {
+  position: fixed;
+  bottom: clamp(0.8rem, 2vh, 1.5rem);
+  left: 50%; transform: translateX(-50%);
+  font-family: var(--font-display);
+  font-size: var(--label-size);
+  letter-spacing: 0.12em; text-transform: uppercase;
+  z-index: 199;
+  background: rgba(10, 15, 28, 0.85);
+  color: var(--text-muted);
+  padding: 0.3em 0.8em; border-radius: 999px;
+  border: 1px solid rgba(0, 255, 204, 0.2);
+  pointer-events: none; opacity: 0.7;
+}
+
+/* ===========================================
+   FRAGMENT REVEALS — for delayed in-slide reveals
+   =========================================== */
+[data-fragment] {
+  opacity: 0;
+  transform: translateY(15px);
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+[data-fragment].fragment-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* ===========================================
+   TIMER SVG — used on the Finish Your Game slide
+   and as a small badge on the Your Turn slide
+   =========================================== */
+.timer-svg {
+  width: clamp(180px, 28vw, 360px);
+  height: auto;
+  color: var(--cyan);
+  filter: drop-shadow(0 0 24px rgba(0, 255, 204, 0.55));
+}
+.timer-svg .timer-hand-second {
+  transform-origin: 50px 55px;
+  animation: timer-spin 6s linear infinite;
+}
+@keyframes timer-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Small badge version for Slide 7 (Your Turn) — top-right corner */
+.timer-badge {
+  position: absolute;
+  top: clamp(0.8rem, 2vh, 1.5rem);
+  right: clamp(5rem, 8vw, 8rem);  /* clear of the slide counter */
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  padding: 0.35em 0.85em 0.35em 0.45em;
+  background: rgba(0, 255, 204, 0.08);
+  border: 1px solid rgba(0, 255, 204, 0.4);
+  border-radius: 999px;
+  z-index: 50;
+  pointer-events: none;
+}
+.timer-badge .timer-svg {
+  width: clamp(20px, 2.6vw, 28px);
+  filter: none;
+}
+.timer-badge .timer-badge-text {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--small-size);
+  color: var(--cyan);
+  letter-spacing: 0.1em;
+}
+
+/* Debugging slide layout */
+.debug-grid {
+  display: grid;
+  grid-template-columns: 0.95fr 1fr;
+  gap: var(--gap);
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
+  margin-top: var(--gap-sm);
+}
+@media (max-width: 900px) { .debug-grid { grid-template-columns: 1fr; } }
+.debug-img-wrap {
+  display: flex; flex-direction: column; gap: var(--gap-sm);
+  align-items: center; justify-content: center;
+}
+.debug-img-wrap img {
+  max-width: 100%;
+  max-height: min(50vh, 360px);
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 0, 170, 0.3);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.45);
+}
+.debug-img-caption {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  color: var(--magenta);
+  text-align: center;
+  letter-spacing: 0.05em;
+  font-style: italic;
+}
+.debug-prompt-box {
+  background: rgba(0, 255, 204, 0.05);
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  border-radius: 12px;
+  padding: clamp(0.9rem, 1.8vw, 1.4rem);
+  display: flex; flex-direction: column; gap: 0.6em;
+  font-family: var(--font-display);
+}
+.debug-prompt-box .label {
+  font-family: var(--font-display);
+  font-size: var(--small-size);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--magenta);
+  margin-bottom: 0.2em;
+}
+.debug-prompt-box .race-line {
+  font-size: var(--body-size);
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+.debug-prompt-box .race-line strong.letter {
+  display: inline-block;
+  min-width: 1.5em;
+  font-weight: 800;
+}
+.debug-prompt-box .race-line .letter.r { color: var(--cyan); }
+.debug-prompt-box .race-line .letter.a { color: var(--magenta); }
+.debug-prompt-box .race-line .letter.c { color: var(--blue); }
+.debug-prompt-box .race-line .letter.e { color: var(--gold); }
+
+/* ============================================================
+   READABILITY OVERRIDES — slides 3 through 10
+   Body / description text was rendering in --text-dim (#3a4a6a)
+   which is barely legible on the dark navy background. Force
+   white for student-facing body content on these slides.
+   Headings on slides 5 + 6 vary across cyan/magenta/blue/gold
+   so the R/A/C/E labels pop and create visual rhythm.
+   ============================================================ */
+
+/* Slide 2 (WALT): bump bullet text up so students can read it from the back of the room */
+.slide[data-slide="2"] .bullet-list li {
+  font-size: clamp(1.3rem, 2.6vw, 2rem);
+  line-height: 1.45;
+  padding-left: 1.4em;
+}
+.slide[data-slide="2"] .bullet-list { gap: clamp(0.8rem, 1.8vh, 1.5rem); }
+.slide[data-slide="2"] .bullet-list li::before {
+  font-size: 1.2em;
+  top: -0.05em;
+}
+
+/* ===========================================
+   SLIDE 8 — CRAM LAYOUT
+   3 task cards (with full R/A/C/E) + timer + full debugging content all on ONE viewport.
+   Tight padding + small font tokens so nothing overflows.
+   =========================================== */
+.cram-slide .slide-inner {
+  padding: clamp(0.8rem, 2vh, 1.4rem) clamp(1rem, 2.5vw, 2rem);
+  display: flex;
+  flex-direction: column;
+}
+.cram-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: clamp(0.8rem, 2vw, 1.6rem);
+}
+.cram-header-left { flex: 1; min-width: 0; }
+.cram-header-left .slide-title {
+  font-size: clamp(1.6rem, 3.8vw, 2.6rem);
+  line-height: 1;
+}
+.cram-header-right {
+  display: flex;
+  align-items: center;
+  gap: clamp(0.4rem, 1vw, 0.8rem);
+  flex-shrink: 0;
+}
+.cram-timer-svg {
+  width: clamp(70px, 11vh, 120px);
+  height: clamp(70px, 11vh, 120px);
+}
+.cram-timer-label {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+.cram-timer-num {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.4vw, 3.4rem);
+  font-weight: 800;
+  color: var(--cyan);
+  letter-spacing: -0.02em;
+}
+.cram-timer-unit {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 1.6vw, 1.6rem);
+  color: var(--text-primary);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.cram-timer-tag {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.3vw, 1.3rem);
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 0.3em;
+}
+
+.cram-body {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: clamp(0.5rem, 1.2vw, 1rem);
+  flex: 1;
+  min-height: 0;
+}
+
+/* LEFT — 3 task cards stacked. Each card is its OWN container.
+   Text sizes scale with the CARD'S width via cqi units (1cqi = 1% of card inline size). */
+.cram-task-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 1vh, 0.7rem);
+  min-height: 0;
+}
+.cram-task-card {
+  container-type: inline-size;
+  container-name: taskcard;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: clamp(0.4rem, 0.9cqi, 0.85rem) clamp(0.7rem, 1.6cqi, 1.3rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.2rem, 0.7cqi, 0.45rem);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;            /* safety net: text never bleeds past card edge */
+  justify-content: space-between;
+}
+.cram-task-card.t1 { border-color: rgba(0,255,204,0.45); }
+.cram-task-card.t2 { border-color: rgba(68,136,255,0.45); }
+.cram-task-card.t3 { border-color: rgba(255,0,170,0.45); }
+.cram-task-card.t1 .task-level { color: var(--cyan); }
+.cram-task-card.t2 .task-level { color: var(--blue); }
+.cram-task-card.t3 .task-level { color: var(--magenta); }
+.cram-task-card .task-level {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 7.5cqi, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+}
+.cram-task-desc {
+  font-size: clamp(0.85rem, 4.2cqi, 1.85rem);
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+.cram-task-race {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.1rem, 0.5cqi, 0.35rem) clamp(0.5rem, 2.5cqi, 1.4rem);
+}
+.cram-task-race span {
+  font-size: clamp(0.78rem, 3.6cqi, 1.55rem);
+  color: #ffffff;
+  line-height: 1.15;
+}
+.cram-task-race span strong { color: var(--cyan); }
+.cram-task-card.t2 .cram-task-race span strong { color: var(--blue); }
+.cram-task-card.t3 .cram-task-race span strong { color: var(--magenta); }
+
+/* Narrow card (e.g. student Chromebook, phone landscape) — flip RACE bullets to 1 column
+   so long phrases like "Sunset orange & pink, each block distinct" get the full card width. */
+@container taskcard (max-width: 480px) {
+  .cram-task-race { grid-template-columns: 1fr; }
+}
+
+/* RIGHT — debugging container with same cqi-based scaling */
+.cram-debug-col {
+  container-type: inline-size;
+  container-name: debugcard;
+  background: rgba(255, 0, 170, 0.04);
+  border: 1px solid rgba(255, 0, 170, 0.3);
+  border-radius: 7px;
+  padding: clamp(0.4rem, 1.1cqi, 0.9rem) clamp(0.7rem, 1.8cqi, 1.3rem);
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.2rem, 0.8cqi, 0.5rem);
+  min-height: 0;
+  overflow: hidden;
+  justify-content: space-between;
+}
+.cram-debug-title {
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 8.5cqi, 3.4rem);
+  font-weight: 700;
+  line-height: 1.05;
+  margin: 0;
+  color: var(--text-primary);
+}
+.cram-debug-def {
+  font-size: clamp(0.9rem, 4.2cqi, 1.8rem);
+  line-height: 1.25;
+  color: var(--text-primary);
+  margin: 0;
+}
+.cram-debug-img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: clamp(70px, 16vh, 170px);
+  overflow: hidden;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 0, 170, 0.25);
+}
+.cram-debug-img img {
+  max-width: 100%;
+  max-height: 100%;
+  height: auto;
+  width: auto;
+  object-fit: contain;
+}
+.cram-debug-caption {
+  font-size: clamp(0.75rem, 3.2cqi, 1.4rem);
+  color: var(--magenta);
+  text-align: center;
+  line-height: 1.2;
+  margin: 0;
+  font-style: italic;
+}
+.cram-debug-prompt {
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid var(--magenta);
+  padding: clamp(0.3rem, 1cqi, 0.7rem) clamp(0.55rem, 1.6cqi, 1rem);
+  border-radius: 0 4px 4px 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.1rem, 0.5cqi, 0.25rem);
+  overflow: hidden;
+}
+.cram-debug-prompt-label {
+  font-family: var(--font-display);
+  font-size: clamp(0.75rem, 3.2cqi, 1.4rem);
+  color: var(--gold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.15rem;
+}
+.cram-race-line {
+  font-size: clamp(0.8rem, 3.6cqi, 1.55rem);
+  line-height: 1.2;
+  margin: 0;
+  color: var(--text-primary);
+}
+.cram-letter { display: inline-block; min-width: 1.1em; font-size: 1.05em; }
+.cram-letter.r { color: var(--cyan); }
+.cram-letter.a { color: var(--magenta); }
+.cram-letter.c { color: var(--blue); }
+.cram-letter.e { color: var(--gold); }
+.cram-debug-tagline {
+  font-family: var(--font-display);
+  font-size: clamp(1rem, 5cqi, 2.2rem);
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0;
+}
+
+/* Very short viewports — shrink the debug image so the column stays balanced */
+@media (max-height: 600px) {
+  .cram-debug-img { max-height: clamp(50px, 10vh, 90px); }
+}
+
+.slide[data-slide="3"]  .star-card .level-desc,
+.slide[data-slide="4"]  .card .body-text,
+.slide[data-slide="5"]  .vocab-def,
+.slide[data-slide="6"]  .race-card-q,
+.slide[data-slide="6"]  .race-card-eg,
+.slide[data-slide="7"]  .vocab-def,
+.slide[data-slide="8"]  .vocab-def,
+.slide[data-slide="9"]  .race-row-q,
+.slide[data-slide="10"] .body-text,
+.slide[data-slide="10"] .bullet-list li,
+.slide[data-slide="10"] .prompt-block {
+  color: var(--text-primary);
+}
+
+/* Slide 3 — vary star-card heading colours per tier */
+.slide[data-slide="3"] .star-card.s1 .level-label,
+.slide[data-slide="3"] .star-card.s1 .level-label .star-cyan { color: var(--cyan)    !important; }
+.slide[data-slide="3"] .star-card.s2 .level-label,
+.slide[data-slide="3"] .star-card.s2 .level-label .star-cyan { color: var(--gold)    !important; }
+.slide[data-slide="3"] .star-card.s3 .level-label,
+.slide[data-slide="3"] .star-card.s3 .level-label .star-cyan { color: var(--magenta) !important; }
+
+/* Slide 5 — vary R/A/C/E heading colours (recap card grid) */
+.slide[data-slide="5"] .vocab-grid > .vocab-item:nth-child(1) .vocab-term { color: var(--cyan)    !important; }
+.slide[data-slide="5"] .vocab-grid > .vocab-item:nth-child(2) .vocab-term { color: var(--magenta) !important; }
+.slide[data-slide="5"] .vocab-grid > .vocab-item:nth-child(3) .vocab-term { color: var(--blue)    !important; }
+.slide[data-slide="5"] .vocab-grid > .vocab-item:nth-child(4) .vocab-term { color: var(--gold)    !important; }
+
+/* Slide 6 — vary R/A/C/E card heading colours (full framework cards) */
+.slide[data-slide="6"] .race-card.r .race-card-letter,
+.slide[data-slide="6"] .race-card.r .race-card-word { color: var(--cyan); }
+.slide[data-slide="6"] .race-card.a .race-card-letter,
+.slide[data-slide="6"] .race-card.a .race-card-word { color: var(--magenta); }
+.slide[data-slide="6"] .race-card.c .race-card-letter,
+.slide[data-slide="6"] .race-card.c .race-card-word { color: var(--blue); }
+.slide[data-slide="6"] .race-card.e .race-card-letter,
+.slide[data-slide="6"] .race-card.e .race-card-word { color: var(--gold); }
+
+/* ===========================================
+   SLIDE 4 — HOOK (Two Dragons reveal)
+   =========================================== */
+.hook-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1rem, 2vw, 2rem);
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--gap-sm);
+}
+.hook-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.5rem, 1vh, 0.9rem);
+  min-height: 0;
+  padding: clamp(0.6rem, 1.2vw, 1rem);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.hook-col-good {
+  border-color: rgba(255, 0, 170, 0.4);
+  background: rgba(255, 0, 170, 0.04);
+}
+.hook-tag {
+  font-family: var(--font-display);
+  font-size: clamp(0.78rem, 1.15vw, 1rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.35em 0.8em;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+.hook-prompt-vague {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", monospace);
+  font-size: clamp(1.1rem, 1.9vw, 1.7rem);
+  color: var(--text-muted);
+  font-style: italic;
+  padding: clamp(0.4rem, 1vh, 0.7rem) 0;
+}
+.hook-prompt-race {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: clamp(0.4rem, 1vh, 0.7rem) 0;
+}
+.hook-race-line {
+  font-size: clamp(0.85rem, 1.4vw, 1.2rem);
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.hook-img-wrap {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+  min-height: 0;
+}
+.hook-img-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* ===========================================
+   SLIDE 7 — I DO STYLES GRID
+   =========================================== */
+.styles-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(0.5rem, 1.2vw, 1rem);
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--gap-sm);
+}
+.style-card {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.6vh, 0.5rem);
+  padding: clamp(0.4rem, 0.9vw, 0.7rem);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  min-height: 0;
+  overflow: hidden;
+}
+.style-card-img {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #000;
+  min-height: 0;
+}
+.style-card-img img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+.style-card-label {
+  font-family: var(--font-display);
+  font-size: clamp(0.9rem, 1.5vw, 1.3rem);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  text-transform: uppercase;
+}
+.style-card-eg {
+  font-size: clamp(0.7rem, 1.1vw, 0.95rem);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.25;
+  font-style: italic;
+}
+.style-card.s1 { border-color: rgba(0,255,204,0.35); }
+.style-card.s1 .style-card-label { color: var(--cyan); }
+.style-card.s2 { border-color: rgba(255,0,170,0.35); }
+.style-card.s2 .style-card-label { color: var(--magenta); }
+.style-card.s3 { border-color: rgba(68,136,255,0.35); }
+.style-card.s3 .style-card-label { color: var(--blue); }
+.style-card.s4 { border-color: rgba(255,209,102,0.35); }
+.style-card.s4 .style-card-label { color: var(--gold); }
+.style-card.s5 { border-color: rgba(0,255,204,0.35); }
+.style-card.s5 .style-card-label { color: var(--cyan); }
+.style-card.s6 { border-color: rgba(255,0,170,0.35); }
+.style-card.s6 .style-card-label { color: var(--magenta); }
+
+/* ===========================================
+   SLIDE 8 — WE DO (vague vs RACE cat with prompts shown)
+   =========================================== */
+.wedo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(0.8rem, 1.5vw, 1.4rem);
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--gap-sm);
+}
+.wedo-col {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 0.9vh, 0.7rem);
+  padding: clamp(0.5rem, 1.1vw, 0.9rem);
+  border-radius: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+.wedo-col.vague {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+}
+.wedo-col.race {
+  background: rgba(255, 0, 170, 0.04);
+  border: 1px solid rgba(255, 0, 170, 0.45);
+}
+.wedo-tag {
+  font-family: var(--font-display);
+  font-size: clamp(0.8rem, 1.2vw, 1.05rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  align-self: flex-start;
+  padding: 0.3em 0.7em;
+  border-radius: 4px;
+}
+.wedo-prompt {
+  font-size: clamp(0.78rem, 1.25vw, 1.05rem);
+  line-height: 1.3;
+  color: var(--text-primary);
+  padding: 0.4rem 0;
+}
+.wedo-prompt.vague {
+  font-family: var(--font-mono, ui-monospace, "SF Mono", monospace);
+  font-style: italic;
+  color: var(--text-muted);
+}
+.wedo-race-lines { display: flex; flex-direction: column; gap: 0.2rem; }
+.wedo-race-line { font-size: clamp(0.75rem, 1.2vw, 1rem); line-height: 1.3; }
+.wedo-img {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: #000;
+  min-height: 0;
+}
+.wedo-img img {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+/* ===========================================
+   SLIDE 9 — YOU DO INSPIRATION GRID
+   =========================================== */
+.inspo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: clamp(0.5rem, 1.1vw, 1rem);
+  flex: 1;
+  min-height: 0;
+  margin-top: var(--gap-sm);
+}
+.inspo-card {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.3rem, 0.5vh, 0.5rem);
+  padding: clamp(0.4rem, 0.9vw, 0.7rem);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  min-height: 0;
+  overflow: hidden;
+}
+.inspo-img {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #000;
+  min-height: 0;
+}
+.inspo-img img { max-width: 100%; max-height: 100%; object-fit: cover; width: 100%; height: 100%; }
+.inspo-label {
+  font-family: var(--font-display);
+  font-size: clamp(0.85rem, 1.4vw, 1.2rem);
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.inspo-card:nth-child(1) { border-color: rgba(0,255,204,0.4); }
+.inspo-card:nth-child(1) .inspo-label { color: var(--cyan); }
+.inspo-card:nth-child(2) { border-color: rgba(255,0,170,0.4); }
+.inspo-card:nth-child(2) .inspo-label { color: var(--magenta); }
+.inspo-card:nth-child(3) { border-color: rgba(68,136,255,0.4); }
+.inspo-card:nth-child(3) .inspo-label { color: var(--blue); }
+.inspo-card:nth-child(4) { border-color: rgba(255,209,102,0.4); }
+.inspo-card:nth-child(4) .inspo-label { color: var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- Progress bar -->
+<div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
+
+<!-- Navigation dots — built by JS -->
+<nav class="nav-dots" id="navDots" aria-label="Slide navigation"></nav>
+
+<!-- Slide counter -->
+<div class="slide-counter" id="slideCounter">1 / 13</div>
+
+<!-- Speaker notes panel — toggle with N key or triple-tap NEXT -->
+<aside class="speaker-notes-panel" id="speakerNotes" aria-label="Speaker notes (press N or triple-tap NEXT)">
+  <div class="notes-header">
+    <span class="notes-label">📝 Speaker Notes</span>
+    <span class="notes-counter" id="notesCounter">Slide 1 / 13</span>
+  </div>
+  <div class="notes-body" id="notesBody">(no notes for this slide)</div>
+</aside>
+<div class="notes-hint" id="notesHint">Press N or triple-tap → for speaker notes</div>
+
+<!-- Cursor effects canvas — glowing trail + click-and-drag ink -->
+<canvas id="cursorFx" aria-hidden="true"></canvas>
+
+<!-- Font size control — A− | 100% | A+ -->
+<div class="font-scale-ctrl" id="fontScaleCtrl" aria-label="Font size">
+  <button id="fontScaleDown" aria-label="Decrease font size" title="Smaller (⌘ ,)">A−</button>
+  <span id="fontScaleLabel">100%</span>
+  <button id="fontScaleUp"   aria-label="Increase font size" title="Larger (⌘ .)">A+</button>
+  <span class="ctrl-divider" aria-hidden="true"></span>
+  <button id="fullscreenBtn" class="fs-btn" aria-label="Enter fullscreen" title="Fullscreen (⌘ F)">⛶</button>
+</div>
+
+<div class="slides-container" id="slidesContainer">
+
+  <!-- ============================================================
+       SLIDE 1: TITLE
+       ============================================================ -->
+  <section class="slide active" data-slide="1" aria-label="Title slide"
+    data-notes="<strong>Opener.</strong> Set the tone: RACE is back, but today it leaves the world of code. We use RACE to design A.I. IMAGES. <span class='tag tt'>BR</span> Quick energiser: 'Hands up — who has ever made an A.I. image before?' Take a few hands. 'Today, you all will.'">
+    <div class="s1-orb"></div>
+    <div class="s1-ring"></div>
+    <div class="s1-bottom-bar"></div>
+
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">A.I. &amp; Digital Literacy</span>
+
+      <h1 class="s1-title reveal d2">
+        A.I. Image<br>
+        <span class="glow-cyan">Studio</span>
+      </h1>
+
+      <div class="accent-line reveal d3"></div>
+
+      <p class="slide-title reveal d4" style="color: var(--text-muted); font-size: var(--h3-size);">
+        RACE for <span class="glow-magenta">Visuals</span>
+      </p>
+
+      <div class="s1-meta reveal d5">
+        <span class="s1-pill">Year 5 + 6</span>
+        <span class="s1-pill">Cycle 7</span>
+        <span class="s1-pill">30 Minutes</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 2: WALT
+       ============================================================ -->
+  <section class="slide" data-slide="2" aria-label="Learning intentions"
+    data-notes="<strong>WALT.</strong> Read aloud. Today's three learning intentions are the same goal as last lesson plus an extension: design and build YOUR OWN feature. <span class='tag cfu'>CFU</span> 'Tell your partner which intention you think will be the trickiest today and why.' Take 1 voice.">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">WALT</span>
+      <h2 class="slide-title reveal d2">What Are We Learning Today?</h2>
+      <div class="accent-line reveal d3"></div>
+
+      <ul class="bullet-list">
+        <li class="reveal d3"><em><strong>Apply</strong></em> the RACE framework to <em><strong>design</strong></em> a detailed A.I. prompt that generates a specific image.</li>
+        <li class="reveal d4"><em><strong>Describe</strong></em> exactly what we want using strong <strong>Context</strong> and <strong>Expectation</strong> details.</li>
+        <li class="reveal d5"><em><strong>Evaluate</strong></em> our A.I. image and <em><strong>refine</strong></em> our RACE prompt to make it better.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 3: SUCCESS CRITERIA
+       ============================================================ -->
+  <section class="slide" data-slide="3" aria-label="Success criteria"
+    data-notes="<strong>Success Criteria.</strong> Three stars. <em>Going Further</em> is the new bar this lesson — students should be designing their own RACE prompts unaided. <span class='tag tt'>Turn and Talk</span> 'Which star are you aiming for today, and what would make you reach the next one?'">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">Success Criteria</span>
+      <h2 class="slide-title reveal d2">How will you know you've succeeded?</h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div style="display: flex; flex-direction: column; gap: var(--gap-sm);">
+        <div class="star-card s1 reveal d3">
+          <span class="level-label"><span class="star-cyan">★</span> Getting Started</span>
+          <p class="level-desc">I can write a complete RACE prompt for an image and generate at least one A.I. image.</p>
+        </div>
+        <div class="star-card s2 reveal d4">
+          <span class="level-label"><span class="star-cyan">★★</span> Levelling Up</span>
+          <p class="level-desc">I can <em>identify</em> which letter of RACE most changed my image and <em>describe</em> why.</p>
+        </div>
+        <div class="star-card s3 reveal d5">
+          <span class="level-label"><span class="star-cyan">★★★</span> Going Further</span>
+          <p class="level-desc">I can <em>refine</em> my RACE prompt, <em>generate</em> an improved version, and <em>explain</em> what I changed and why it worked.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 4: HOOK — Same A.I., same word, different result.
+       Fragment reveal: vague dragon (1) → RACE dragon (2) → RACE prompt (3).
+       ============================================================ -->
+  <section class="slide" data-slide="4" aria-label="Hook: two dragons"
+    data-notes="<strong>Hook (3 min).</strong> Set up: 'Same A.I. tool. Same word: dragon. What changed? The DETAIL.' Click NEXT to reveal the boring dragon first. <span class='tag cfu'>CFU Cold Call</span> 'Would you put this dragon in your storybook? Why not?' Take 2 voices. Click NEXT again to reveal the RACE dragon. Cold call: 'Which dragon would you pick? Why?' Click NEXT once more to reveal the prompt. Point out R / A / C / E in colour. Bridge to today: 'The difference IS the RACE prompt.'">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">Hook</span>
+      <h2 class="slide-title reveal d2">Same A.I. Same Word. <span style="color: var(--magenta);">Different Result.</span></h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div class="hook-grid">
+        <!-- LEFT: vague dragon (revealed on 1st NEXT press) -->
+        <div class="hook-col" data-fragment="1">
+          <div class="hook-tag" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border);">PROMPT 1</div>
+          <div class="hook-prompt-vague">"draw a dragon"</div>
+          <div class="hook-img-wrap">
+            <img src="assets/hook-vague-dragon.png" alt="A bland, generic cartoon dragon on an empty background">
+          </div>
+        </div>
+
+        <!-- RIGHT: RACE dragon (revealed on 2nd NEXT press) -->
+        <div class="hook-col hook-col-good" data-fragment="2">
+          <div class="hook-tag" style="background: rgba(255,0,170,0.12); color: var(--magenta); border: 1px solid rgba(255,0,170,0.4);">PROMPT 2 · RACE</div>
+          <div class="hook-prompt-race">
+            <span class="hook-race-line"><strong style="color: var(--cyan);">R:</strong> children's-book illustrator</span>
+            <span class="hook-race-line"><strong style="color: var(--magenta);">A:</strong> draw a dragon</span>
+            <span class="hook-race-line"><strong style="color: var(--blue);">C:</strong> ice dragon in a frozen mountain cave</span>
+            <span class="hook-race-line"><strong style="color: var(--gold);">E:</strong> silver-blue scales, glowing eyes, frost breath, painterly oil style</span>
+          </div>
+          <div class="hook-img-wrap">
+            <img src="assets/hook-race-dragon.png" alt="A detailed ice dragon with silver-blue scales, glowing eyes, in a frozen mountain cave">
+          </div>
+        </div>
+      </div>
+
+      <!-- Tagline: revealed on 3rd NEXT press -->
+      <p data-fragment="3" style="text-align: center; font-family: var(--font-display); font-size: clamp(1rem, 1.8vw, 1.5rem); color: var(--gold); letter-spacing: 0.12em; margin-top: var(--gap-sm); text-transform: uppercase;">
+        Same A.I. Same word. The difference is in the <strong style="color: var(--magenta);">RACE</strong>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 5: RECAP — Last lesson you debugged code. RACE works for ANYTHING.
+       References Cycle 6 (debugging Mr Igor's Space-bar bug) then pivots to today.
+       ============================================================ -->
+  <section class="slide" data-slide="5" aria-label="Recap: last lesson"
+    data-notes="<strong>Recap (1 min).</strong> Quick callback to last lesson: 'You used RACE to ***debug*** Mr Igor's Space-bar bug.' <span class='tag cfu'>CFU Cold Call</span> 'What does the C in RACE stand for?' Wait 5s. Pivot: 'RACE is NOT just for code. It works for ANY A.I. Today we use it for IMAGES.'">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">Last Lesson Recap</span>
+      <h2 class="slide-title reveal d2">You Used RACE to <span style="color: var(--cyan);">Debug</span>.</h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div class="two-col" style="flex: 1; align-items: stretch; margin-top: var(--gap);">
+        <div class="card reveal d3">
+          <p class="eyebrow" style="margin-bottom: var(--gap-sm); color: var(--cyan);">Last lesson</p>
+          <p class="body-text" style="font-size: var(--h3-size);">Mr Igor's Tetris had a bug: pressing <strong>Space</strong> froze the block instead of dropping it.</p>
+          <p class="body-text" style="margin-top: var(--gap-sm);">You wrote a <strong style="color: var(--magenta);">RACE prompt</strong> to find and fix it. That is called <strong style="color: var(--magenta);">debugging</strong>.</p>
+        </div>
+        <div class="card reveal d4" style="border-color: rgba(255,0,170,0.4);">
+          <p class="eyebrow" style="margin-bottom: var(--gap-sm); color: var(--magenta);">Today</p>
+          <p class="body-text" style="font-size: var(--h3-size);">RACE is <strong>NOT just for code.</strong></p>
+          <p class="body-text" style="margin-top: var(--gap-sm);">Today you use the <strong>SAME framework</strong> to design A.I. <strong style="color: var(--magenta);">images</strong>. The pattern is the same. The output is different.</p>
+        </div>
+      </div>
+
+      <p class="reveal d5" style="text-align: center; font-family: var(--font-display); font-size: clamp(1rem, 1.7vw, 1.4rem); color: var(--gold); letter-spacing: 0.12em; margin-top: var(--gap); text-transform: uppercase;">
+        RACE works for <strong style="color: var(--cyan);">code</strong>, <strong style="color: var(--magenta);">images</strong>, music, writing &mdash; <strong>anything A.I. makes.</strong>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 6: RACE FRAMEWORK RECAP (with fragment-reveal question)
+       Question shown by default, R/A/C/E breakdown reveals on next clicks
+       ============================================================ -->
+  <section class="slide" data-slide="6" aria-label="RACE framework recap"
+    data-notes="<strong>RACE recap with IMAGE examples (3 min).</strong> Same framework you already know, fresh examples for images. <span class='tag cfu'>CFU Cold Call</span> 'Who can ***explain*** how RACE works?' Wait 5-7s. Take 2 voices. THEN press NEXT four times to reveal R / A / C / E one by one. For each: 'How would you describe this letter when designing an IMAGE?'">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">RACE Recap &middot; Now for Images</span>
+      <h2 class="slide-title reveal d2">The <span style="color: var(--magenta);">RACE</span> Framework</h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div class="two-col" style="flex: 1; align-items: stretch; margin-top: var(--gap-sm); gap: clamp(0.6rem, 1.4vw, 1.2rem);">
+        <!-- LEFT: RACE vocab cards revealed one at a time -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: clamp(0.4rem, 1vw, 0.8rem); min-height: 0;">
+          <div class="vocab-item" data-fragment="1">
+            <div class="vocab-term" style="color: var(--cyan);">R &middot; Role</div>
+            <div class="vocab-def">Who should the A.I. <strong>pretend to be</strong>? (e.g. children's book illustrator, photographer, anime artist)</div>
+          </div>
+          <div class="vocab-item" data-fragment="2">
+            <div class="vocab-term" style="color: var(--magenta);">A &middot; Action</div>
+            <div class="vocab-def">What should the A.I. <strong>draw or generate</strong>? (e.g. draw a sea creature, paint a landscape)</div>
+          </div>
+          <div class="vocab-item" data-fragment="3">
+            <div class="vocab-term" style="color: var(--blue);">C &middot; Context</div>
+            <div class="vocab-def">What is the <strong>scene or story</strong>? (e.g. lives near a coral reef, big curious eyes, a fish approaching)</div>
+          </div>
+          <div class="vocab-item" data-fragment="4">
+            <div class="vocab-term" style="color: var(--gold);">E &middot; Expectation</div>
+            <div class="vocab-def">What should the image <strong>LOOK like</strong>? (style, colour, mood, format, e.g. bright watercolour, A4 portrait)</div>
+          </div>
+        </div>
+
+        <!-- RIGHT: live example — sea creature image + the prompt that made it -->
+        <div class="reveal d4" style="display: flex; flex-direction: column; gap: clamp(0.4rem, 0.9vh, 0.6rem); padding: clamp(0.5rem, 1.1vw, 0.9rem); background: rgba(255,0,170,0.05); border: 1px solid rgba(255,0,170,0.35); border-radius: 8px; min-height: 0;">
+          <span style="font-family: var(--font-display); font-size: clamp(0.78rem, 1.2vw, 1rem); color: var(--magenta); letter-spacing: 0.12em; text-transform: uppercase;">Live Example</span>
+          <div style="flex: 1; display: flex; justify-content: center; align-items: center; min-height: 0; overflow: hidden; border-radius: 6px; background: #000;">
+            <img src="assets/race-example-sea-creature.png" alt="A friendly fantasy sea creature with big eyes near a coral reef" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+          </div>
+          <p style="font-size: clamp(0.72rem, 1.1vw, 0.95rem); color: var(--text-muted); text-align: center; font-style: italic; line-height: 1.3; margin: 0;">
+            R: children's book illustrator &middot; A: draw a sea creature &middot; C: coral reef, big eyes, a fish approaching &middot; E: bright watercolour, A4 portrait
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 7: I DO — Style is YOUR superpower (6 art-style examples)
+       The E in RACE is where STYLE lives. Show variety so students
+       know how much freedom they have.
+       ============================================================ -->
+  <section class="slide" data-slide="7" aria-label="Style is your superpower"
+    data-notes="<strong>I Do (3 min).</strong> The MOST powerful letter for images is E (Expectation), and inside E the most powerful word is STYLE. Walk through these 6 styles. Cold-call for each: 'Who would use THIS style and for what?' Encourage them to think of styles beyond these 6 (cartoon, sketch, oil painting, vaporwave, papercut, stained glass, etc.)">
+    <div class="slide-inner">
+      <div class="ped-badge i-do reveal d1">I Do</div>
+      <h2 class="slide-title reveal d2">Style is Your <span style="color: var(--magenta);">Superpower</span></h2>
+      <div class="accent-line reveal d3"></div>
+      <p class="body-text reveal d3" style="color: var(--text-primary); margin-bottom: var(--gap-sm);">
+        Same A.I. Same subject. Change ONE word in <strong style="color: var(--gold);">E (Expectation)</strong> and you get a whole different image. Pick a style that fits YOUR idea.
+      </p>
+
+      <div class="styles-grid">
+        <div class="style-card s1 reveal d3">
+          <div class="style-card-img"><img src="assets/style-watercolour.png" alt="A red fox sleeping under a tree in watercolour style"></div>
+          <div class="style-card-label">Watercolour</div>
+          <div class="style-card-eg">soft, painterly, dreamy</div>
+        </div>
+        <div class="style-card s2 reveal d3">
+          <div class="style-card-img"><img src="assets/style-manga.png" alt="An anime warrior holding a katana in Japanese manga style"></div>
+          <div class="style-card-label">Japanese Manga</div>
+          <div class="style-card-eg">bold ink, big eyes, action lines</div>
+        </div>
+        <div class="style-card s3 reveal d4">
+          <div class="style-card-img"><img src="assets/style-pixel-art.png" alt="A small adventurer in a forest, 16-bit pixel art"></div>
+          <div class="style-card-label">Pixel Art</div>
+          <div class="style-card-eg">retro 16-bit video-game look</div>
+        </div>
+        <div class="style-card s4 reveal d4">
+          <div class="style-card-img"><img src="assets/style-photorealistic.png" alt="A bald eagle soaring above mountains, photorealistic"></div>
+          <div class="style-card-label">Photorealistic</div>
+          <div class="style-card-eg">looks like a real photo</div>
+        </div>
+        <div class="style-card s5 reveal d5">
+          <div class="style-card-img"><img src="assets/style-3d-pixar.png" alt="A friendly little robot in 3D Pixar style"></div>
+          <div class="style-card-label">3D Pixar</div>
+          <div class="style-card-eg">smooth, glossy, animated-film</div>
+        </div>
+        <div class="style-card s6 reveal d5">
+          <div class="style-card-img"><img src="assets/style-comic.png" alt="A superhero soaring in classic comic book style"></div>
+          <div class="style-card-label">Comic Book</div>
+          <div class="style-card-eg">bold outlines, dots, action poses</div>
+        </div>
+      </div>
+
+      <p class="reveal d6" style="text-align: center; font-family: var(--font-display); font-size: clamp(0.9rem, 1.6vw, 1.3rem); color: var(--gold); letter-spacing: 0.12em; margin-top: var(--gap-sm); text-transform: uppercase;">
+        ...and dozens more: <span style="color: var(--text-primary);">sketch &middot; oil painting &middot; vaporwave &middot; papercut &middot; stained glass &middot; chalk</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 8: WE DO - Vague cat vs RACE cat with both PROMPTS shown.
+       ============================================================ -->
+  <section class="slide" data-slide="8" aria-label="We Do: vague vs RACE"
+    data-notes="<strong>We Do (3 min).</strong> Live on projector: type 'draw a cat' first. Show the bland result. Then type the full RACE cat prompt. Show the cyber-warrior cat. <span class='tag tt'>Turn and Talk #36</span> 'Which letter of RACE made the BIGGEST difference between these two cats? Tell your partner.' 30 sec. Cold-call one pair.">
+    <div class="slide-inner">
+      <div class="ped-badge we-do reveal d1">We Do</div>
+      <h2 class="slide-title reveal d2">Watch the <span style="color: var(--magenta);">Difference</span></h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div class="wedo-grid">
+        <!-- LEFT: vague prompt + bland cat -->
+        <div class="wedo-col vague reveal d3">
+          <span class="wedo-tag" style="background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--border);">Prompt 1 &middot; Vague</span>
+          <p class="wedo-prompt vague">"draw a cat"</p>
+          <div class="wedo-img">
+            <img src="assets/wedo-vague-cat.png" alt="A plain orange cartoon cat on a white background">
+          </div>
+        </div>
+
+        <!-- RIGHT: RACE prompt + cyber cat -->
+        <div class="wedo-col race reveal d4">
+          <span class="wedo-tag" style="background: rgba(255,0,170,0.12); color: var(--magenta); border: 1px solid rgba(255,0,170,0.4);">Prompt 2 &middot; RACE</span>
+          <div class="wedo-race-lines">
+            <p class="wedo-race-line"><strong style="color: var(--cyan);">R:</strong> concept artist</p>
+            <p class="wedo-race-line"><strong style="color: var(--magenta);">A:</strong> draw a warrior cat</p>
+            <p class="wedo-race-line"><strong style="color: var(--blue);">C:</strong> cyberpunk city rooftop at night, raining, neon billboards</p>
+            <p class="wedo-race-line"><strong style="color: var(--gold);">E:</strong> glowing neon armour, cinematic lighting, digital art, 16:9</p>
+          </div>
+          <div class="wedo-img">
+            <img src="assets/wedo-race-cat.png" alt="A cyberpunk warrior cat with neon armour on a rainy rooftop">
+          </div>
+        </div>
+      </div>
+
+      <p class="reveal d5" style="text-align: center; font-family: var(--font-display); font-size: clamp(1rem, 1.7vw, 1.4rem); color: var(--gold); letter-spacing: 0.12em; margin-top: var(--gap-sm); text-transform: uppercase;">
+        Turn and Talk: which letter made the <strong style="color: var(--magenta);">biggest difference</strong>?
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 9: YOU DO INSPIRATION - Examples of what students can create.
+       ============================================================ -->
+  <section class="slide" data-slide="9" aria-label="You Do inspiration"
+    data-notes="<strong>You Do brief (2 min).</strong> Show students what is POSSIBLE so they aim high. These four are just examples - they should make THEIR own. <span class='tag cfu'>CFU Cold Call</span> 'Which one of these would you have written, and what would your RACE prompt have looked like?' Take 1 quick voice. Then unleash them on their own.">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">Inspiration</span>
+      <h2 class="slide-title reveal d2">You Can Create <span style="color: var(--magenta);">Anything</span></h2>
+      <div class="accent-line reveal d3"></div>
+      <p class="body-text reveal d3" style="color: var(--text-primary); margin-bottom: var(--gap-sm);">
+        Animal, character, scene, vehicle, food, fantasy world. Anything you can <em>describe</em> with RACE, the A.I. can <em>draw</em>.
+      </p>
+
+      <div class="inspo-grid">
+        <div class="inspo-card reveal d3">
+          <div class="inspo-img"><img src="assets/youdo-dinosaur-knight.png" alt="A friendly T-Rex knight in silver armour"></div>
+          <div class="inspo-label">Dinosaur Knight</div>
+        </div>
+        <div class="inspo-card reveal d4">
+          <div class="inspo-img"><img src="assets/youdo-underwater-city.png" alt="A glowing underwater city in bubbles"></div>
+          <div class="inspo-label">Underwater City</div>
+        </div>
+        <div class="inspo-card reveal d4">
+          <div class="inspo-img"><img src="assets/youdo-space-explorer.png" alt="A child astronaut beside an alien jellyfish in space"></div>
+          <div class="inspo-label">Space Explorer</div>
+        </div>
+        <div class="inspo-card reveal d5">
+          <div class="inspo-img"><img src="assets/youdo-fantasy-castle.png" alt="A floating fantasy castle in the clouds"></div>
+          <div class="inspo-label">Sky Castle</div>
+        </div>
+      </div>
+
+      <p class="reveal d6" style="text-align: center; font-family: var(--font-display); font-size: clamp(1rem, 1.7vw, 1.4rem); color: var(--gold); letter-spacing: 0.12em; margin-top: var(--gap-sm); text-transform: uppercase;">
+        Your idea + your RACE prompt = your image.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 10: YOUR TURN - Plan your RACE, generate, refine.
+       ============================================================ -->
+  <section class="slide" data-slide="10" aria-label="Your Turn"
+    data-notes="<strong>You Do (12 min).</strong> Students follow 3 steps. <strong>1. Plan</strong> R/A/C/E on paper before typing. <strong>2. Generate</strong> in Gemini AI Studio. <strong>3. Refine</strong> ONE letter and regenerate. Teacher circulates with clipboard (TLAC #13 Show Call). Watch for vague A and missing E. Pair-check at 6-min mark. <strong>SAFETY:</strong> remind no people, no personal info, school-appropriate only.">
+    <div class="slide-inner">
+      <div class="ped-badge you-do reveal d1">You Do</div>
+      <h2 class="slide-title reveal d2">Your Turn</h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div class="two-col" style="flex: 1; align-items: stretch; margin-top: var(--gap-sm); gap: clamp(0.6rem, 1.4vw, 1.2rem);">
+        <!-- Left: the 3 steps -->
+        <div style="display: flex; flex-direction: column; gap: clamp(0.4rem, 0.9vh, 0.7rem); min-height: 0;">
+          <div class="card reveal d3" style="border-color: rgba(0,255,204,0.45); flex: 1; display: flex; flex-direction: column; gap: 0.3rem;">
+            <p class="eyebrow" style="color: var(--cyan); margin: 0;">Step 1 &middot; 3 min</p>
+            <p style="font-family: var(--font-display); font-size: clamp(1.1rem, 1.9vw, 1.6rem); font-weight: 700; color: var(--text-primary); margin: 0;">PLAN on paper</p>
+            <p class="body-text" style="margin: 0;">Write your R / A / C / E down BEFORE you type. Each letter must say something.</p>
+          </div>
+          <div class="card reveal d4" style="border-color: rgba(255,0,170,0.45); flex: 1; display: flex; flex-direction: column; gap: 0.3rem;">
+            <p class="eyebrow" style="color: var(--magenta); margin: 0;">Step 2 &middot; 5 min</p>
+            <p style="font-family: var(--font-display); font-size: clamp(1.1rem, 1.9vw, 1.6rem); font-weight: 700; color: var(--text-primary); margin: 0;">GENERATE in Gemini</p>
+            <p class="body-text" style="margin: 0;">Paste your RACE prompt into the A.I. image tool. See what comes out.</p>
+          </div>
+          <div class="card reveal d5" style="border-color: rgba(255,209,102,0.45); flex: 1; display: flex; flex-direction: column; gap: 0.3rem;">
+            <p class="eyebrow" style="color: var(--gold); margin: 0;">Step 3 &middot; 4 min</p>
+            <p style="font-family: var(--font-display); font-size: clamp(1.1rem, 1.9vw, 1.6rem); font-weight: 700; color: var(--text-primary); margin: 0;">REFINE and re-run</p>
+            <p class="body-text" style="margin: 0;">Change ONE letter of RACE (usually C or E). Generate again. Compare.</p>
+          </div>
+        </div>
+
+        <!-- Right: safety + reminder card -->
+        <div class="card reveal d4" style="display: flex; flex-direction: column; gap: clamp(0.4rem, 0.9vh, 0.7rem); padding: clamp(0.6rem, 1.2vw, 1rem); border-color: rgba(255,0,170,0.45); background: rgba(255,0,170,0.05);">
+          <p class="eyebrow" style="color: var(--magenta); margin: 0; font-size: clamp(0.8rem, 1.2vw, 1.05rem);">Safety &middot; Read this</p>
+          <ul style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: clamp(0.4rem, 0.8vh, 0.6rem);">
+            <li style="font-size: clamp(0.85rem, 1.3vw, 1.1rem); line-height: 1.35;">No <strong>real people</strong> (no classmates, teachers, family, celebrities).</li>
+            <li style="font-size: clamp(0.85rem, 1.3vw, 1.1rem); line-height: 1.35;">No <strong>personal info</strong> in your prompt (name, address, school).</li>
+            <li style="font-size: clamp(0.85rem, 1.3vw, 1.1rem); line-height: 1.35;"><strong>School-appropriate</strong> only. Animals, characters, scenes, vehicles, food, fantasy.</li>
+            <li style="font-size: clamp(0.85rem, 1.3vw, 1.1rem); line-height: 1.35;">If the A.I. makes something strange or upsetting: <strong style="color: var(--magenta);">hand up immediately</strong>. Don't show others.</li>
+          </ul>
+          <p style="font-family: var(--font-display); font-size: clamp(1rem, 1.6vw, 1.3rem); color: var(--gold); letter-spacing: 0.1em; text-transform: uppercase; text-align: center; margin: auto 0 0 0;">
+            Hand up if stuck.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 11: EXIT TICKET
+       ============================================================ -->
+  <section class="slide" data-slide="11" aria-label="Exit ticket"
+    data-notes="<strong>Exit Ticket (~7 min total).</strong> Two timed share steps. <strong>Step 1 (2 min):</strong> students show their image to a partner. Walk around, look for unfinished work or bugs. Press NEXT to reveal Step 2. <strong>Step 2 (5 min):</strong> 4-5 volunteers show their image on the projector. <span class='tag tt'>BR</span> 'When you watch a friend's image, name ONE thing the A.I. nailed and ONE letter of RACE they would change.'">
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">Exit Ticket</span>
+      <h2 class="slide-title reveal d2">Show Your Game</h2>
+      <div class="accent-line reveal d3"></div>
+
+      <div class="two-col" style="align-items: stretch; margin-top: var(--gap-sm); flex: 1;">
+        <!-- STEP 1: Show your friend (visible by default) -->
+        <div class="card reveal d3" style="border-color: rgba(0,255,204,0.4); display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--gap-sm); padding: clamp(1rem, 2vw, 1.6rem);">
+          <span class="eyebrow" style="color: var(--cyan); font-size: var(--small-size);">Step 1</span>
+          <p style="font-family: var(--font-display); font-size: var(--h3-size); font-weight: 700; line-height: 1.2; color: var(--text-primary);">
+            Show your <span style="color: var(--cyan);">friend</span><br>your A.I. image.
+          </p>
+          <div style="display: flex; justify-content: center; align-items: center; flex: 1; max-height: 35vh;">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="timer-svg" aria-hidden="true" style="color: var(--cyan); width: clamp(120px, 22vh, 220px); height: clamp(120px, 22vh, 220px);">
+              <rect x="44" y="6" width="12" height="6" rx="1.5" fill="currentColor"/>
+              <line x1="50" y1="12" x2="50" y2="18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <rect x="18" y="22" width="6" height="4" rx="1" fill="currentColor" transform="rotate(-30 21 24)"/>
+              <rect x="76" y="22" width="6" height="4" rx="1" fill="currentColor" transform="rotate(30 79 24)"/>
+              <circle cx="50" cy="55" r="34" fill="rgba(0,255,204,0.04)" stroke="currentColor" stroke-width="2.5"/>
+              <circle cx="50" cy="55" r="30" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+              <line x1="50" y1="25" x2="50" y2="30" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="80" y1="55" x2="75" y2="55" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="50" y1="85" x2="50" y2="80" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="20" y1="55" x2="25" y2="55" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="50" y1="55" x2="50" y2="35" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="50" y1="55" x2="72" y2="55" stroke="var(--magenta)" stroke-width="1.8" stroke-linecap="round" class="timer-hand-second"/>
+              <circle cx="50" cy="55" r="2.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <p style="font-family: var(--font-display); font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 800; color: var(--cyan); line-height: 1;">
+            2<span style="font-size: 0.45em; color: var(--text-primary); letter-spacing: 0.2em; margin-left: 0.3em; text-transform: uppercase;">minutes</span>
+          </p>
+        </div>
+
+        <!-- STEP 2: Show the whole class (revealed via fragment / NEXT click) -->
+        <div class="card" data-fragment="1" style="border-color: rgba(255,0,170,0.4); display: flex; flex-direction: column; align-items: center; text-align: center; gap: var(--gap-sm); padding: clamp(1rem, 2vw, 1.6rem);">
+          <span class="eyebrow" style="color: var(--magenta); font-size: var(--small-size);">Step 2</span>
+          <p style="font-family: var(--font-display); font-size: var(--h3-size); font-weight: 700; line-height: 1.2; color: var(--text-primary);">
+            Show the <span style="color: var(--magenta);">whole class</span><br>your A.I. image.
+          </p>
+          <div style="display: flex; justify-content: center; align-items: center; flex: 1; max-height: 35vh;">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" class="timer-svg" aria-hidden="true" style="color: var(--magenta); width: clamp(120px, 22vh, 220px); height: clamp(120px, 22vh, 220px);">
+              <rect x="44" y="6" width="12" height="6" rx="1.5" fill="currentColor"/>
+              <line x1="50" y1="12" x2="50" y2="18" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <rect x="18" y="22" width="6" height="4" rx="1" fill="currentColor" transform="rotate(-30 21 24)"/>
+              <rect x="76" y="22" width="6" height="4" rx="1" fill="currentColor" transform="rotate(30 79 24)"/>
+              <circle cx="50" cy="55" r="34" fill="rgba(255,0,170,0.04)" stroke="currentColor" stroke-width="2.5"/>
+              <circle cx="50" cy="55" r="30" fill="none" stroke="currentColor" stroke-width="0.5" opacity="0.4"/>
+              <line x1="50" y1="25" x2="50" y2="30" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="80" y1="55" x2="75" y2="55" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="50" y1="85" x2="50" y2="80" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="20" y1="55" x2="25" y2="55" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="50" y1="55" x2="50" y2="35" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <line x1="50" y1="55" x2="72" y2="55" stroke="var(--cyan)" stroke-width="1.8" stroke-linecap="round" class="timer-hand-second"/>
+              <circle cx="50" cy="55" r="2.5" fill="currentColor"/>
+            </svg>
+          </div>
+          <p style="font-family: var(--font-display); font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 800; color: var(--magenta); line-height: 1;">
+            5<span style="font-size: 0.45em; color: var(--text-primary); letter-spacing: 0.2em; margin-left: 0.3em; text-transform: uppercase;">minutes</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 12: MISSION COMPLETE
+       ============================================================ -->
+  <section class="slide" data-slide="12" aria-label="Mission complete"
+    data-notes="<strong>Closing.</strong> Celebrate. They proved RACE is a UNIVERSAL prompting framework: it works for code AND images. Tease forward: 'Next lesson: another A.I. tool. Same RACE. Different output.'">
+    <div class="s1-orb" style="background: radial-gradient(circle, rgba(255,0,170,0.07) 0%, transparent 70%);"></div>
+    <div class="s1-ring" style="border-color: rgba(255,0,170,0.15);"></div>
+    <div class="s1-bottom-bar"></div>
+
+    <div class="slide-inner">
+      <span class="eyebrow reveal d1">Lesson Complete</span>
+      <h1 class="s1-title reveal d2">
+        Mission<br>
+        <span class="glow-magenta">Complete!</span>
+      </h1>
+      <div class="accent-line reveal d3" style="background: var(--magenta); box-shadow: 0 0 10px var(--magenta);"></div>
+
+      <p class="body-text reveal d3">Today you proved that <strong>RACE works for ANY A.I.</strong> You designed your own image with detail, generated it, and refined it. That is real <strong style="color: var(--magenta);">A.I. literacy</strong>.</p>
+
+      <div class="mission-stars reveal d4">
+        <div class="mission-item"><span class="stars star-cyan">★</span><span>Wrote a full RACE prompt</span></div>
+        <div class="mission-item"><span class="stars star-cyan">★★</span><span>Generated your own image</span></div>
+        <div class="mission-item"><span class="stars star-cyan">★★★</span><span>Refined &amp; regenerated</span></div>
+      </div>
+
+      <p class="reveal d5" style="font-family: var(--font-display); font-size: var(--body-size); color: var(--gold); letter-spacing: 0.15em; margin-top: var(--gap);">Keep designing! 🎨</p>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       SLIDE 13: IMAGE CREDITS
+       ============================================================ -->
+  <section class="slide" data-slide="13" aria-label="Image credits"
+    data-notes="<strong>Credits.</strong> Acknowledge image sources. Optional to show, usually skipped during live presenting.">
+    <div class="slide-inner" style="justify-content: flex-end; padding-bottom: clamp(3rem, 8vh, 6rem);">
+      <span class="eyebrow reveal d1">Image Credits</span>
+      <div class="accent-line reveal d2"></div>
+      <div class="credits-list reveal d3">
+        <p class="credit-line">All images on this deck (slides 4, 6, 7, 8, 9) generated with <strong>Google Gemini 2.5 Flash Image</strong> via the Gemini API.</p>
+        <p class="credit-line" style="margin-top: var(--gap-sm);">Hook dragons, RACE sea creature, style examples, We-Do cats, and You-Do inspiration thumbnails created specifically for this lesson.</p>
+        <p class="credit-line" style="margin-top: var(--gap);">Google Gemini is a registered trademark of Google LLC.</p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- /slides-container -->
+
+<script>
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Handles all navigation: keyboard, clicker,
+   mouse wheel, touch/swipe, and nav dots.
+   =========================================== */
+class SlidePresentation {
+  constructor() {
+    this.slides        = Array.from(document.querySelectorAll('.slide'));
+    this.total         = this.slides.length;
+    this.current       = 0;
+    this.isAnimating   = false;
+    this.ANIM_DURATION = 500; // ms — matches CSS transition duration
+
+    this.progressFill  = document.getElementById('progressFill');
+    this.slideCounter  = document.getElementById('slideCounter');
+    this.navDotsEl     = document.getElementById('navDots');
+
+    this.buildNavDots();
+    this.setupKeyboard();
+    this.setupWheel();
+    this.setupTouch();
+    this.updateUI();
+  }
+
+  /* ---- Core navigation ---- */
+  goTo(index) {
+    if (index < 0 || index >= this.total) return;
+    if (this.isAnimating) return;
+    if (index === this.current) return;
+
+    this.isAnimating = true;
+
+    /* Reset fragments on the slide we're leaving AND the slide we're entering */
+    this.slides[this.current].querySelectorAll('[data-fragment]').forEach(f => f.classList.remove('fragment-visible'));
+
+    // Exit current slide to the left
+    this.slides[this.current].classList.remove('active');
+    this.slides[this.current].classList.add('exit-left');
+
+    // Remove exit-left after animation so it resets cleanly
+    const exiting = this.slides[this.current];
+    setTimeout(() => {
+      exiting.classList.remove('exit-left');
+    }, this.ANIM_DURATION);
+
+    this.current = index;
+
+    // Reset fragments on the destination slide too
+    this.slides[this.current].querySelectorAll('[data-fragment]').forEach(f => f.classList.remove('fragment-visible'));
+
+    // Enter new slide
+    this.slides[this.current].classList.add('active');
+
+    setTimeout(() => {
+      this.isAnimating = false;
+    }, this.ANIM_DURATION);
+
+    this.updateUI();
+  }
+
+  /* Get sorted fragments on the current slide */
+  getFragments() {
+    return Array.from(this.slides[this.current].querySelectorAll('[data-fragment]'))
+      .sort((a, b) => parseInt(a.dataset.fragment, 10) - parseInt(b.dataset.fragment, 10));
+  }
+
+  next() {
+    /* Reveal next un-shown fragment first; advance only when no fragments left */
+    const frags = this.getFragments();
+    for (const f of frags) {
+      if (!f.classList.contains('fragment-visible')) {
+        f.classList.add('fragment-visible');
+        return;
+      }
+    }
+    this.goTo(this.current + 1);
+  }
+
+  prev() {
+    /* Hide last shown fragment first; go back only when none are visible */
+    const frags = this.getFragments();
+    for (let i = frags.length - 1; i >= 0; i--) {
+      if (frags[i].classList.contains('fragment-visible')) {
+        frags[i].classList.remove('fragment-visible');
+        return;
+      }
+    }
+    this.goTo(this.current - 1);
+  }
+
+  /* ---- Keyboard + Clicker support ----
+     Debounced 200ms triple-tap on NEXT key → toggle speaker notes.
+     Single tap → advance (with fragment walk via next()).
+     Universal across all clickers (only relies on the standard "next" signal).
+  ---- */
+  setupKeyboard() {
+    const NEXT = ['ArrowRight', 'ArrowDown', 'Space', 'PageDown'];
+    const PREV = ['ArrowLeft', 'ArrowUp', 'PageUp'];
+
+    this.TAP_DEBOUNCE_MS = 200;
+    this.tapCount = 0;
+    this.tapTimer = null;
+    const flushTaps = () => {
+      const count = this.tapCount;
+      this.tapCount = 0;
+      this.tapTimer = null;
+      if (count >= 3) {
+        if (typeof this.onTripleTap === 'function') this.onTripleTap();
+      } else {
+        for (let i = 0; i < count; i++) this.next();
+      }
+    };
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.isContentEditable || ['INPUT','TEXTAREA','IFRAME'].includes(e.target.tagName)) return;
+      if (NEXT.includes(e.code)) {
+        e.preventDefault();
+        if (e.repeat) return;
+        this.tapCount += 1;
+        if (this.tapTimer) clearTimeout(this.tapTimer);
+        this.tapTimer = setTimeout(flushTaps, this.TAP_DEBOUNCE_MS);
+        return;
+      }
+      if (PREV.includes(e.code)) { e.preventDefault(); this.prev(); }
+    });
+  }
+
+  /* ---- Mouse wheel — one tick = one slide ---- */
+  setupWheel() {
+    let wheelLock = false;
+    document.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (wheelLock) return;
+      wheelLock = true;
+      if (e.deltaY > 0) this.next();
+      else              this.prev();
+      setTimeout(() => { wheelLock = false; }, this.ANIM_DURATION + 100);
+    }, { passive: false });
+  }
+
+  /* ---- Touch / swipe (horizontal OR vertical) ---- */
+  setupTouch() {
+    let startX = 0, startY = 0;
+    document.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', (e) => {
+      const dX = startX - e.changedTouches[0].clientX;
+      const dY = startY - e.changedTouches[0].clientY;
+      const THRESHOLD = 50;
+      if (Math.abs(dX) > Math.abs(dY)) {
+        if (dX >  THRESHOLD) this.next();
+        if (dX < -THRESHOLD) this.prev();
+      } else {
+        if (dY >  THRESHOLD) this.next();
+        if (dY < -THRESHOLD) this.prev();
+      }
+    }, { passive: true });
+  }
+
+  /* ---- Navigation dots ---- */
+  buildNavDots() {
+    this.navDotsEl.innerHTML = '';
+    this.slides.forEach((_, i) => {
+      const btn = document.createElement('button');
+      btn.setAttribute('aria-label', `Go to slide ${i + 1}`);
+      btn.addEventListener('click', () => this.goTo(i));
+      this.navDotsEl.appendChild(btn);
+    });
+  }
+
+  /* ---- Update all UI elements ---- */
+  updateUI() {
+    /* Progress bar */
+    const pct = ((this.current + 1) / this.total) * 100;
+    this.progressFill.style.width = pct + '%';
+
+    /* Slide counter */
+    this.slideCounter.textContent = `${this.current + 1} / ${this.total}`;
+
+    /* Nav dots */
+    this.navDotsEl.querySelectorAll('button').forEach((btn, i) => {
+      btn.classList.toggle('active', i === this.current);
+    });
+
+    /* Update page title with slide info for accessibility */
+    document.title = `Slide ${this.current + 1} of ${this.total} — RACE Prompting (Year 5)`;
+  }
+}
+
+/* ===========================================
+   FONT SCALE CONTROLLER
+   Buttons + ⌘. (bigger) / ⌘, (smaller)
+   Range: 50% → 200% in 10% steps.
+   Persists choice in localStorage.
+   =========================================== */
+class FontScaleController {
+  constructor() {
+    this.STEP  = 0.1;
+    this.MIN   = 0.5;
+    this.MAX   = 2.0;
+    this.scale = parseFloat(localStorage.getItem('race_fontScale') || '1');
+
+    this.labelEl = document.getElementById('fontScaleLabel');
+    this.btnUp   = document.getElementById('fontScaleUp');
+    this.btnDown = document.getElementById('fontScaleDown');
+
+    this.btnUp.addEventListener('click',   () => this.increase());
+    this.btnDown.addEventListener('click', () => this.decrease());
+
+    /* Keyboard shortcuts: ⌘. = bigger, ⌘, = smaller */
+    document.addEventListener('keydown', (e) => {
+      if (!e.metaKey) return;
+      if (e.key === '.') { e.preventDefault(); this.increase(); }
+      if (e.key === ',') { e.preventDefault(); this.decrease(); }
+    });
+
+    this.apply(); /* restore saved scale immediately */
+  }
+
+  increase() { this.setScale(this.scale + this.STEP); }
+  decrease() { this.setScale(this.scale - this.STEP); }
+
+  setScale(val) {
+    /* Round to 1 decimal place to avoid floating-point drift */
+    this.scale = Math.round(Math.max(this.MIN, Math.min(this.MAX, val)) * 10) / 10;
+    this.apply();
+    localStorage.setItem('race_fontScale', this.scale);
+  }
+
+  apply() {
+    document.documentElement.style.setProperty('--font-scale', this.scale);
+    this.labelEl.textContent = Math.round(this.scale * 100) + '%';
+    /* Grey out buttons at limits */
+    this.btnDown.disabled = this.scale <= this.MIN;
+    this.btnUp.disabled   = this.scale >= this.MAX;
+  }
+}
+
+/* ===========================================
+   FULLSCREEN CONTROLLER
+   Button + ⌘F (also plain F when no input is focused).
+   Uses the Fullscreen API so browser chrome hides
+   completely — behaves like PPTX Presenter View.
+   Escape exits automatically (browser default).
+   =========================================== */
+class FullscreenController {
+  constructor() {
+    this.btn = document.getElementById('fullscreenBtn');
+    this.btn.addEventListener('click', () => this.toggle());
+
+    /* ⌘F — override the browser's Find shortcut so we can go fullscreen */
+    document.addEventListener('keydown', (e) => {
+      if (e.metaKey && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        this.toggle();
+        return;
+      }
+      /* Plain F key — only if the user isn't typing in an input/textarea/contenteditable */
+      if ((e.key === 'f' || e.key === 'F') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const t = e.target;
+        const typing = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+        if (!typing) { e.preventDefault(); this.toggle(); }
+      }
+    });
+
+    /* Keep button label in sync with state (Escape exit, etc.) */
+    document.addEventListener('fullscreenchange', () => this.syncLabel());
+  }
+
+  toggle() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+
+  syncLabel() {
+    const isFs = !!document.fullscreenElement;
+    this.btn.setAttribute('aria-label', isFs ? 'Exit fullscreen' : 'Enter fullscreen');
+    this.btn.setAttribute('title',      isFs ? 'Exit fullscreen (⌘ F / Esc)' : 'Fullscreen (⌘ F)');
+    this.btn.textContent = isFs ? '⛶' : '⛶';
+  }
+}
+
+/* ===========================================
+   CURSOR EFFECTS
+   Two always-on behaviours on one canvas:
+   (1) Glowing cyan trail follows the cursor and fades (~400ms).
+   (2) Click-and-drag draws a glowing ink line that fades
+       after release (~1.5s) — like Google Slides presenter mode.
+   Skipped on touch devices and when prefers-reduced-motion is set.
+   Clicks on buttons/links/inputs DON'T start a stroke so nav
+   dots and controls work normally.
+   =========================================== */
+class CursorEffects {
+  constructor() {
+    this.canDo =
+      matchMedia('(hover: hover) and (pointer: fine)').matches &&
+      !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!this.canDo) return;
+
+    this.canvas = document.getElementById('cursorFx');
+    this.ctx    = this.canvas.getContext('2d');
+
+    this.trail   = [];    /* {x,y,t} — trail dots, ~400ms life */
+    this.strokes = [];    /* [{points:[{x,y}], done, finishedAt}] */
+    this.current = null;  /* active stroke while mouse is down */
+    this.TRAIL_LIFE = 400;   /* ms */
+    this.INK_FADE   = 1500;  /* ms after mouseup */
+
+    this.resize();
+    window.addEventListener('resize', () => this.resize());
+    this.bindEvents();
+    requestAnimationFrame(() => this.tick());
+  }
+
+  resize() {
+    const dpr = window.devicePixelRatio || 1;
+    this.canvas.width  = innerWidth  * dpr;
+    this.canvas.height = innerHeight * dpr;
+    this.canvas.style.width  = innerWidth  + 'px';
+    this.canvas.style.height = innerHeight + 'px';
+    this.ctx.setTransform(1, 0, 0, 1, 0, 0);
+    this.ctx.scale(dpr, dpr);
+  }
+
+  bindEvents() {
+    window.addEventListener('mousemove', (e) => {
+      this.trail.push({ x: e.clientX, y: e.clientY, t: performance.now() });
+      if (this.current) this.current.points.push({ x: e.clientX, y: e.clientY });
+    });
+
+    window.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      /* Don't draw ink when the user is clicking an interactive element */
+      if (e.target.closest('button, a, [contenteditable], input, textarea, .nav-dots')) return;
+      this.current = { points: [{ x: e.clientX, y: e.clientY }], done: false };
+      this.strokes.push(this.current);
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this.current) {
+        this.current.done = true;
+        this.current.finishedAt = performance.now();
+        this.current = null;
+      }
+    });
+
+    /* If the mouse leaves the window mid-drag, close the stroke cleanly */
+    window.addEventListener('mouseleave', () => {
+      if (this.current) {
+        this.current.done = true;
+        this.current.finishedAt = performance.now();
+        this.current = null;
+      }
+    });
+  }
+
+  tick() {
+    const now = performance.now();
+    const ctx = this.ctx;
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+
+    /* === Cursor trail: soft cyan glow dots === */
+    this.trail = this.trail.filter(p => now - p.t < this.TRAIL_LIFE);
+    for (const p of this.trail) {
+      const age = (now - p.t) / this.TRAIL_LIFE;
+      const alpha = 1 - age;
+      const r = 7 * (1 - age * 0.35);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(0, 255, 204, ${alpha * 0.55})`;
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = 'rgba(0, 255, 204, 0.9)';
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+
+    /* === Ink strokes: solid while drawing, fade after release === */
+    for (let i = this.strokes.length - 1; i >= 0; i--) {
+      const s = this.strokes[i];
+      let alpha = 1;
+      if (s.done) {
+        const age = now - s.finishedAt;
+        if (age >= this.INK_FADE) { this.strokes.splice(i, 1); continue; }
+        alpha = 1 - age / this.INK_FADE;
+      }
+      if (s.points.length < 2) continue;
+      ctx.beginPath();
+      ctx.moveTo(s.points[0].x, s.points[0].y);
+      for (let j = 1; j < s.points.length; j++) {
+        ctx.lineTo(s.points[j].x, s.points[j].y);
+      }
+      ctx.strokeStyle = `rgba(0, 255, 204, ${alpha})`;
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.shadowBlur = 14;
+      ctx.shadowColor = `rgba(0, 255, 204, ${alpha})`;
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+
+    requestAnimationFrame(() => this.tick());
+  }
+}
+
+/* ============================================================
+   SPEAKER NOTES PANEL
+   N key + triple-tap NEXT to toggle. Reads `data-notes` HTML
+   from each slide and re-renders when slide changes.
+   ============================================================ */
+class SpeakerNotesPanel {
+  constructor(presentation) {
+    this.presentation = presentation;
+    this.visible = false;
+    this.panel = document.getElementById('speakerNotes');
+    this.hint  = document.getElementById('notesHint');
+    document.addEventListener('keydown', (e) => {
+      if ((e.key === 'n' || e.key === 'N') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        if (e.target.isContentEditable || ['INPUT','TEXTAREA','IFRAME'].includes(e.target.tagName)) return;
+        e.preventDefault();
+        this.toggle();
+      }
+    });
+    /* Re-render notes whenever slide changes */
+    const orig = presentation.updateUI.bind(presentation);
+    presentation.updateUI = () => { orig(); this.updateContent(); };
+    this.updateContent();
+  }
+  toggle() {
+    this.visible = !this.visible;
+    this.panel.classList.toggle('visible', this.visible);
+    this.hint.style.display = this.visible ? 'none' : '';
+    this.updateContent();
+  }
+  updateContent() {
+    const slide = this.presentation.slides[this.presentation.current];
+    const notes = slide.dataset.notes || '(no notes for this slide)';
+    this.panel.querySelector('.notes-body').innerHTML = notes;
+    this.panel.querySelector('.notes-counter').textContent = `Slide ${this.presentation.current + 1} / ${this.presentation.total}`;
+  }
+}
+
+/* Boot */
+const fontScaleCtrl  = new FontScaleController();
+const fullscreenCtrl = new FullscreenController();
+const cursorFx       = new CursorEffects();
+const presentation   = new SlidePresentation();
+const speakerNotes   = new SpeakerNotesPanel(presentation);
+presentation.onTripleTap = () => speakerNotes.toggle();
+</script>
+
+</body>
+</html>
